@@ -1,18 +1,26 @@
 #include <Arduino.h>
 
-// put function declarations here:
-int myFunction(int, int);
+const int ADC_PIN = 34;   // GPIO34 = ADC input only, good for analog readings
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+void setup()
+{
+    Serial.begin(115200);
+    delay(1000);
+
+    Serial.println("RV Monitoring Gateway");
+    Serial.println("001 - Voltage Monitoring Raw ADC Test");
+
+    analogReadResolution(12); // ESP32 ADC range: 0...4095
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
+void loop()
+{
+    int rawValue = analogRead(ADC_PIN);
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+    Serial.print("ADC raw value on GPIO");
+    Serial.print(ADC_PIN);
+    Serial.print(": ");
+    Serial.println(rawValue);
+
+    delay(1000);
 }
