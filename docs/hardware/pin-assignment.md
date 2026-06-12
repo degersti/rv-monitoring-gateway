@@ -147,8 +147,8 @@ The ESP32-S3 ADC pins must never be connected directly to the 12 V system.
 Two digital inputs are reserved for basic hazard detection.
 
 ```text
-GPIO15 -> Water ingress sensor
-GPIO17 -> Smoke alarm input
+GPIO14 -> Water ingress sensor
+GPIO15 -> Smoke alarm input
 ```
 
 The final input circuit depends on the selected sensor type.
