@@ -36,7 +36,7 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | **GPIO15** | **Smoke alarm input** | **Used** | **Digital input / interrupt** |
 | **GPIO16** | **LTE Power Enable** | Reserved | **LTE modem power control** |
 | **GPIO17** | **LTE UART TX** | **Reserved** | **ESP32 TX → LTE RX** |
-| **GPIO18** | **LTE** UART RX** | **Reserved** | **ESP32 RX ← LTE TX** |
+| **GPIO18** | **LTE UART RX** | **Reserved** | **ESP32 RX ← LTE TX** |
 | GPIO19 | Free | Available | Future expansion |
 | GPIO20 | Free | Available | Future expansion |
 | GPIO21 | Free | Available | Future expansion |
