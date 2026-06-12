@@ -1,4 +1,4 @@
-# ADR-002: Controller Platform Selection
+# ADR-001: Controller Platform Selection
 
 ## Status
 
