@@ -16,27 +16,70 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 
 ## Pin Assignment Overview
 
-| Function | ESP32-S3 GPIO | Direction | Interface | Notes |
-|-----------|-------------|-----------|-----------|---------|
-| I2C SDA (SHT31,...)| GPIO8 | Bidirectional | I2C | Shared sensor bus |
-| I2C SCL (SHT31,...) | GPIO9 | Output | I2C | Shared sensor bus |
-| House Battery Voltage | GPIO4 | Input | ADC | Via protected voltage divider |
-| Engine Battery Voltage | GPIO5 | Input | ADC | Via protected voltage divider |
-| Reserved Analog Input | GPIO6 | Input | ADC | Future analog sensor or diagnostics |
-| Reserved Analog Input | GPIO7 | Input | ADC | Future analog sensor or diagnostics |
-| Water Ingress Sensor | GPIO14 | Input | Digital / Interrupt |  Isolated or protected input recommended|
-| Smoke Alarm Input | GPIO15 | Input | Digital / Interrupt | Isolated or protected input recommended |
-| Reserved Digital Input | GPIO16 | Input | Digital / Interrupt | Isolated or protected input recommended |
-| Status LED | GPIO48 | Output | Digital | Onboard RGB LED on many ESP32-S3 DevKit boards |
-| LTE UART TX | GPIO17 | Output | UART | Reserved for future LTE modem |
-| LTE UART RX | GPIO18 | Input | UART | Reserved for future LTE modem |
-| LTE Power Enable | GPIO16 | Output | Digital | Reserved for future modem power control |
-| SD Card CS | GPIO10 | Output | SPI | Reserved for future SD card |
-| SD Card MOSI | GPIO11 | Output | SPI | Reserved for future SD card |
-| SD Card SCK | GPIO12 | Output | SPI | Reserved for future SD card |
-| SD Card MISO | GPIO13 | Input | SPI | Reserved for future SD card |
+| GPIO | Prototype Assignment | Status | Notes |
+|------|----------------------|--------|-------|
+| GPIO0 | Not used | Avoid | Boot / strapping related |
+| GPIO1 | Free | Available | Can be used if needed |
+| GPIO2 | Free | Available | Can be used if needed |
+| GPIO3 | Not used | Avoid | Avoid for prototype stability |
+| GPIO4 | House battery voltage | Used | ADC input |
+| GPIO5 | Engine battery voltage | Used | ADC input |
+| GPIO6 | Reserved analog input | Reserved | ADC-capable |
+| GPIO7 | Reserved analog input | Reserved | ADC-capable |
+| GPIO8 | I2C SDA | Used | Shared sensor bus |
+| GPIO9 | I2C SCL | Used | Shared sensor bus |
+| GPIO10 | SD Card CS | Reserved | SPI reserved |
+| GPIO11 | SD Card MOSI | Reserved | SPI reserved |
+| GPIO12 | SD Card SCK | Reserved | SPI reserved |
+| GPIO13 | SD Card MISO | Reserved | SPI reserved |
+| GPIO14 | Water ingress sensor | Used | Digital input / interrupt |
+| GPIO15 | Smoke alarm input | Used | Digital input / interrupt |
+| GPIO16 | LTE power enable | Reserved | Future modem control |
+| GPIO17 | LTE UART TX | Reserved | ESP32 TX → LTE RX |
+| GPIO18 | LTE UART RX | Reserved | ESP32 RX ← LTE TX |
+| GPIO19 | Free | Available | Can be used if needed |
+| GPIO20 | Free | Available | Can be used if needed |
+| GPIO21 | Free | Available | Can be used if needed |
+| GPIO26 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO27 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO28 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO29 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO30 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO31 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO32 | Not used | Avoid | Usually connected to internal flash / PSRAM |
+| GPIO33 | Free | Available | Can be used if exposed on DevKit |
+| GPIO34 | Free | Available | Can be used if exposed on DevKit |
+| GPIO35 | Free | Available | Can be used if exposed on DevKit |
+| GPIO36 | Free | Available | Can be used if exposed on DevKit |
+| GPIO37 | Free | Available | Can be used if exposed on DevKit |
+| GPIO38 | Status LED alternative | Board-dependent | Some ESP32-S3 DevKits use this for RGB LED |
+| GPIO39 | Free | Available | Can be used if exposed on DevKit |
+| GPIO40 | Free | Available | Can be used if exposed on DevKit |
+| GPIO41 | Free | Available | Can be used if exposed on DevKit |
+| GPIO42 | Free | Available | Can be used if exposed on DevKit |
+| GPIO43 | USB / Serial | Avoid | Often used for UART / USB-serial |
+| GPIO44 | USB / Serial | Avoid | Often used for UART / USB-serial |
+| GPIO45 | Not used | Avoid | Strapping related |
+| GPIO46 | Not used | Avoid | Strapping / input-only limitations |
+| GPIO47 | Free | Available | Can be used if exposed on DevKit |
+| GPIO48 | Status LED | Board-dependent | RGB LED on some ESP32-S3 DevKit versions |
 
 ---
+## GPIO Allocation Summary
+
+```text
+GPIO0-GPIO3     Avoid / leave unused
+GPIO4-GPIO7     Analog measurements
+GPIO8-GPIO9     I2C sensor bus
+GPIO10-GPIO13   Reserved SPI / SD card
+GPIO14-GPIO15   Digital alarm inputs
+GPIO16-GPIO18   Reserved LTE modem interface
+GPIO19-GPIO21   Free expansion
+GPIO26-GPIO32   Avoid, internal flash / PSRAM related
+GPIO33-GPIO42   Free expansion if exposed on board
+GPIO43-GPIO44   Avoid, USB / serial related
+GPIO45-GPIO46   Avoid, strapping related
+GPIO47-GPIO48   Board-dependent / optional
 
 ## Prototype Wiring Overview
 
@@ -55,8 +98,8 @@ ESP32-S3 DevKitC-1
 │
 ├── Digital Inputs
 │   ├── GPIO14  -> Water ingress sensor
-│   ├── GPIO15  -> Smoke alarm input
-|   └── GPIO16  -> Reserved
+│   └── GPIO15  -> Smoke alarm input
+|  
 │
 ├── Reserved LTE Interface
 │   ├── GPIO17 -> LTE UART TX
@@ -120,8 +163,8 @@ The ESP32-S3 ADC pins must never be connected directly to the 12 V system.
 Two digital inputs are reserved for basic hazard detection.
 
 ```text
-GPIO6 -> Water ingress sensor
-GPIO7 -> Smoke alarm input
+GPIO15 -> Water ingress sensor
+GPIO17 -> Smoke alarm input
 ```
 
 The final input circuit depends on the selected sensor type.
@@ -182,9 +225,10 @@ The first hardware prototype shall only use:
 
 - ESP32-S3 DevKitC-1
 - SHT31 temperature and humidity sensor
-- one simulated battery voltage input
-- optional second battery voltage input
-- optional water sensor input
+- house battery voltage input
+- engine battery voltage input
+- smoke detector input
+- water detector input
 
 The initial firmware goal is:
 
@@ -192,10 +236,10 @@ The initial firmware goal is:
 Read SHT31
 Read battery voltage ADC
 Publish values via MQTT
-View data in MQTT Explorer
+View data on website
 ```
 
-LTE modem, SD card, backend services, and final enclosure design are outside the scope of the first prototype.
+LTE modem, SD card and final enclosure design are outside the scope of the first prototype.
 
 ---
 
