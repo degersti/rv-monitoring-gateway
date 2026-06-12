@@ -17,52 +17,52 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 ## Pin Assignment Overview
 
 | GPIO | Prototype Assignment | Status | Notes |
-|------|----------------------|--------|-------|
+|------|----------------------|----------|-------|
 | GPIO0 | Not used | Avoid | Boot / strapping related |
 | GPIO1 | Free | Available | Can be used if needed |
 | GPIO2 | Free | Available | Can be used if needed |
 | GPIO3 | Not used | Avoid | Avoid for prototype stability |
-| GPIO4 | House battery voltage | Used | ADC input |
-| GPIO5 | Engine battery voltage | Used | ADC input |
+| **GPIO4** | **House battery voltage** | **Used** | **ADC input** |
+| **GPIO5** | **Engine battery voltage** | **Used** | **ADC input** |
 | GPIO6 | Reserved analog input | Reserved | ADC-capable |
 | GPIO7 | Reserved analog input | Reserved | ADC-capable |
-| GPIO8 | I2C SDA | Used | Shared sensor bus |
-| GPIO9 | I2C SCL | Used | Shared sensor bus |
-| GPIO10 | SD Card CS | Reserved | SPI reserved |
-| GPIO11 | SD Card MOSI | Reserved | SPI reserved |
-| GPIO12 | SD Card SCK | Reserved | SPI reserved |
-| GPIO13 | SD Card MISO | Reserved | SPI reserved |
-| GPIO14 | Water ingress sensor | Used | Digital input / interrupt |
-| GPIO15 | Smoke alarm input | Used | Digital input / interrupt |
-| GPIO16 | LTE power enable | Reserved | Future modem control |
+| **GPIO8** | **I2C SDA** | **Used** | **SHT31 and future I2C sensors** |
+| **GPIO9** | **I2C SCL** | **Used** | **SHT31 and future I2C sensors** |
+| GPIO10 | SD Card CS | Reserved | SPI interface for SD card module |
+| GPIO11 | SD Card MOSI | Reserved | SPI interface for SD card module |
+| GPIO12 | SD Card SCK | Reserved | SPI interface for SD card module |
+| GPIO13 | SD Card MISO | Reserved | SPI interface for SD card module |
+| **GPIO14** | **Water ingress sensor** | **Used** | **Digital input / interrupt** |
+| **GPIO15** | **Smoke alarm input** | **Used** | **Digital input / interrupt** |
+| GPIO16 | LTE Power Enable | Reserved | LTE modem power control |
 | GPIO17 | LTE UART TX | Reserved | ESP32 TX → LTE RX |
 | GPIO18 | LTE UART RX | Reserved | ESP32 RX ← LTE TX |
-| GPIO19 | Free | Available | Can be used if needed |
-| GPIO20 | Free | Available | Can be used if needed |
-| GPIO21 | Free | Available | Can be used if needed |
-| GPIO26 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO27 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO28 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO29 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO30 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO31 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO32 | Not used | Avoid | Usually connected to internal flash / PSRAM |
-| GPIO33 | Free | Available | Can be used if exposed on DevKit |
-| GPIO34 | Free | Available | Can be used if exposed on DevKit |
-| GPIO35 | Free | Available | Can be used if exposed on DevKit |
-| GPIO36 | Free | Available | Can be used if exposed on DevKit |
-| GPIO37 | Free | Available | Can be used if exposed on DevKit |
-| GPIO38 | Status LED alternative | Board-dependent | Some ESP32-S3 DevKits use this for RGB LED |
-| GPIO39 | Free | Available | Can be used if exposed on DevKit |
-| GPIO40 | Free | Available | Can be used if exposed on DevKit |
-| GPIO41 | Free | Available | Can be used if exposed on DevKit |
-| GPIO42 | Free | Available | Can be used if exposed on DevKit |
-| GPIO43 | USB / Serial | Avoid | Often used for UART / USB-serial |
-| GPIO44 | USB / Serial | Avoid | Often used for UART / USB-serial |
+| GPIO19 | Free | Available | Future expansion |
+| GPIO20 | Free | Available | Future expansion |
+| GPIO21 | Free | Available | Future expansion |
+| GPIO26 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO27 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO28 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO29 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO30 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO31 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO32 | Not used | Avoid | Internal Flash / PSRAM |
+| GPIO33 | Free | Available | Future expansion |
+| GPIO34 | Free | Available | Future expansion |
+| GPIO35 | Free | Available | Future expansion |
+| GPIO36 | Free | Available | Future expansion |
+| GPIO37 | Free | Available | Future expansion |
+| GPIO38 | Status LED (Board-dependent) | Optional | Some DevKit revisions |
+| GPIO39 | Free | Available | Future expansion |
+| GPIO40 | Free | Available | Future expansion |
+| GPIO41 | Free | Available | Future expansion |
+| GPIO42 | Free | Available | Future expansion |
+| GPIO43 | USB / Serial | Avoid | Programming / debug interface |
+| GPIO44 | USB / Serial | Avoid | Programming / debug interface |
 | GPIO45 | Not used | Avoid | Strapping related |
 | GPIO46 | Not used | Avoid | Strapping / input-only limitations |
-| GPIO47 | Free | Available | Can be used if exposed on DevKit |
-| GPIO48 | Status LED | Board-dependent | RGB LED on some ESP32-S3 DevKit versions |
+| GPIO47 | Free | Available | Future expansion |
+| GPIO48 | Status LED (Board-dependent) | Optional | Some DevKit revisions |
 
 ---
 ## GPIO Allocation Summary
