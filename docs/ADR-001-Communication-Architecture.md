@@ -65,11 +65,94 @@ Although a direct HTTP or PHP-based backend would be sufficient for simple one-d
 
 ## Initial Implementation Approach
 
-For local development and protocol testing, a local Mosquitto broker may be used.
+The communication architecture shall be validated incrementally in order to reduce implementation risk and allow early testing of the complete communication chain.
 
-For the first internet-connected prototype, a managed MQTT broker such as HiveMQ Cloud may be used to reduce infrastructure effort and allow early testing over public internet connections.
+### Phase 1 – Local MQTT Validation
 
-The initial firmware shall be designed so that broker configuration, credentials, and transport settings can be changed without modifying the core measurement and alarm logic.
+A local Mosquitto broker running on the development PC shall be used to validate MQTT communication between the ESP32 gateway and backend components.
+
+MQTT Explorer shall be used as a monitoring and debugging tool to visualize topics, payloads, retained messages and connection status.
+
+Architecture:
+
+```text
+ESP32
+ ↓ MQTT
+Mosquitto (PC)
+ ↑
+MQTT Explorer
+```
+
+Objectives:
+
+- Verify MQTT connectivity
+- Validate topic structure
+- Validate payload formats
+- Test retained messages
+- Test Last Will and Testament functionality
+- Gain familiarity with MQTT tooling
+
+### Phase 2 – Internet-Based Prototype
+
+Following successful local validation, the MQTT broker shall be migrated to a cloud-hosted environment.
+
+A managed MQTT service such as HiveMQ Cloud shall be used during the prototype phase to enable testing over public internet connections while minimizing infrastructure complexity.
+
+Architecture:
+
+```text
+ESP32
+ ↓ MQTT over TLS
+HiveMQ Cloud
+ ↑
+MQTT Explorer
+```
+
+Objectives:
+
+- Validate communication over public internet connections
+- Verify TLS-secured communication
+- Test operation through typical RV and vessel network connections
+- Validate remote access capabilities
+- Evaluate communication reliability under real-world conditions
+
+### Phase 3 – Product-Oriented Backend Integration
+
+The MQTT broker shall act as a decoupling layer between gateway devices and backend services.
+
+Potential backend consumers include:
+
+- PHP-based backend services
+- MySQL databases
+- InfluxDB time-series databases
+- Grafana dashboards
+- Alarm and notification services
+- Mobile applications
+
+Example architecture:
+
+```text
+ESP32
+ ↓ MQTT
+Broker
+ ├── Backend Service
+ │     ↓
+ │    MySQL
+ │
+ ├── InfluxDB
+ │     ↓
+ │   Grafana
+ │
+ └── Alarm Service
+```
+
+This approach allows backend technologies to evolve independently from the gateway firmware while maintaining a stable communication interface.
+
+### Long-Term Outlook
+
+The selected MQTT architecture is considered suitable not only for prototype development but also for potential productization.
+
+The MQTT broker provides a stable abstraction layer between embedded devices and backend services, allowing future changes to storage technologies, visualization platforms, notification systems, and cloud infrastructure without requiring modifications to the gateway firmware.
 
 ## Related Decisions
 
