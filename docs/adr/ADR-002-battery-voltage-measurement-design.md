@@ -68,6 +68,55 @@ the resulting ADC voltages are:
 
 This ensures that the ADC input voltage remains safely below the ESP32-S3 maximum input voltage of 3.3 V.
 
+## Low-Power Measurement Consideration
+
+Since the resistor divider is connected to the battery, it creates a continuous current path from the battery to ground.
+
+With the planned resistor values:
+
+```text
+R1 = 100 kΩ
+R2 = 18 kΩ
+```
+
+the divider current is approximately:
+
+```text
+I = 12 V / (100 kΩ + 18 kΩ)
+I ≈ 102 µA
+```
+
+This current is small, but it is continuously drawn from the battery, even while the ESP32-S3 is in deep sleep.
+
+For the initial prototype, this may be acceptable. However, for long-term unattended operation, especially in marine or RV installations, the voltage divider should be evaluated as part of the overall power budget.
+
+A future hardware revision may switch the voltage divider using a MOSFET or load switch so that the divider is only active during measurement.
+
+Conceptual switched divider:
+
+```text
+12V_BAT / Onboard Supply
+   |
+ [Switch / MOSFET]
+   |
+  R1
+   |
+   +---- Rser ---- ESP32-S3 ADC
+   |        |
+  R2       C1
+   |        |
+  GND      GND
+```
+
+The firmware would then:
+
+1. enable the measurement circuit
+2. wait for the ADC input to settle
+3. take the voltage measurement
+4. disable the measurement circuit again
+
+This reduces continuous battery drain but increases hardware and firmware complexity.
+
 ## Protection Measures
 
 The design includes:
@@ -107,6 +156,21 @@ These measures are not required for the first prototype but should be considered
 
 ## Alternatives Considered
 
+### Switched Voltage Divider
+
+Advantages:
+
+- Reduces continuous battery drain during deep sleep
+- Better suited for long-term unattended operation
+- Allows the measurement circuit to be powered only when required
+
+Disadvantages:
+
+- Increased circuit complexity
+- Requires an additional MOSFET or load switch
+- Requires firmware control and ADC settling time
+- Additional failure modes compared to a permanently connected divider
+
 ### Direct ADC Connection
 
 Advantages:
@@ -131,3 +195,4 @@ Disadvantages:
 - Increased cost
 - Additional PCB complexity
 - Not required for the initial prototype phase
+  
