@@ -18,16 +18,15 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 
 | Function | ESP32-S3 GPIO | Direction | Interface | Notes |
 |-----------|-------------|-----------|-----------|---------|
-| I2C SDA | GPIO8 | Bidirectional | I2C | Shared sensor bus |
-| I2C SCL | GPIO9 | Output | I2C | Shared sensor bus |
-| SHT31 Temperature / Humidity Sensor | GPIO8 / GPIO9 | Bidirectional | I2C | Primary environmental sensor |
+| I2C SDA (SHT31,...)| GPIO8 | Bidirectional | I2C | Shared sensor bus |
+| I2C SCL (SHT31,...) | GPIO9 | Output | I2C | Shared sensor bus |
 | House Battery Voltage | GPIO4 | Input | ADC | Via protected voltage divider |
 | Engine Battery Voltage | GPIO5 | Input | ADC | Via protected voltage divider |
 | Reserved Analog Input | GPIO6 | Input | ADC | Future analog sensor or diagnostics |
 | Reserved Analog Input | GPIO7 | Input | ADC | Future analog sensor or diagnostics |
 | Water Ingress Sensor | GPIO14 | Input | Digital / Interrupt |  Isolated or protected input recommended|
 | Smoke Alarm Input | GPIO15 | Input | Digital / Interrupt | Isolated or protected input recommended |
-| Reserced Digital Input | GPIO16 | Input | Digital / Interrupt | Isolated or protected input recommended |
+| Reserved Digital Input | GPIO16 | Input | Digital / Interrupt | Isolated or protected input recommended |
 | Status LED | GPIO48 | Output | Digital | Onboard RGB LED on many ESP32-S3 DevKit boards |
 | LTE UART TX | GPIO17 | Output | UART | Reserved for future LTE modem |
 | LTE UART RX | GPIO18 | Input | UART | Reserved for future LTE modem |
