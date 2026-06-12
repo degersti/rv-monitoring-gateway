@@ -1,4 +1,4 @@
-# ADR-004: Power Supply and Protection Design
+# ADR-005: Power Supply and Protection Design
 
 ## Status
 
