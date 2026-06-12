@@ -28,15 +28,15 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO7 | Reserved analog input | Reserved | ADC-capable |
 | **GPIO8** | **I2C SDA** | **Used** | **SHT31 and future I2C sensors** |
 | **GPIO9** | **I2C SCL** | **Used** | **SHT31 and future I2C sensors** |
-| GPIO10 | SD Card CS | Reserved | SPI interface for SD card module |
-| GPIO11 | SD Card MOSI | Reserved | SPI interface for SD card module |
-| GPIO12 | SD Card SCK | Reserved | SPI interface for SD card module |
-| GPIO13 | SD Card MISO | Reserved | SPI interface for SD card module |
+| **GPIO10** | **SD Card CS** | **Reserved** | **SPI interface for SD card module** |
+| **GPIO11** | **SD Card MOSI** | **Reserved** | **SPI interface for SD card module** |
+| **GPIO12** | **SD Card SCK** | **Reserved** | **SPI interface for SD card module** |
+| **GPIO13** | **SD Card MISO** | **Reserved** | **SPI interface for SD card module** |
 | **GPIO14** | **Water ingress sensor** | **Used** | **Digital input / interrupt** |
 | **GPIO15** | **Smoke alarm input** | **Used** | **Digital input / interrupt** |
-| GPIO16 | LTE Power Enable | Reserved | LTE modem power control |
-| GPIO17 | LTE UART TX | Reserved | ESP32 TX → LTE RX |
-| GPIO18 | LTE UART RX | Reserved | ESP32 RX ← LTE TX |
+| **GPIO16** | **LTE Power Enable** | Reserved | **LTE modem power control** |
+| **GPIO17** | **LTE UART TX** | **Reserved** | **ESP32 TX → LTE RX** |
+| **GPIO18** | **LTE** UART RX** | **Reserved** | **ESP32 RX ← LTE TX** |
 | GPIO19 | Free | Available | Future expansion |
 | GPIO20 | Free | Available | Future expansion |
 | GPIO21 | Free | Available | Future expansion |
@@ -65,22 +65,6 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO48 | Status LED (Board-dependent) | Optional | Some DevKit revisions |
 
 ---
-## GPIO Allocation Summary
-
-```text
-GPIO0-GPIO3     Avoid / leave unused
-GPIO4-GPIO7     Analog measurements
-GPIO8-GPIO9     I2C sensor bus
-GPIO10-GPIO13   Reserved SPI / SD card
-GPIO14-GPIO15   Digital alarm inputs
-GPIO16-GPIO18   Reserved LTE modem interface
-GPIO19-GPIO21   Free expansion
-GPIO26-GPIO32   Avoid, internal flash / PSRAM related
-GPIO33-GPIO42   Free expansion if exposed on board
-GPIO43-GPIO44   Avoid, USB / serial related
-GPIO45-GPIO46   Avoid, strapping related
-GPIO47-GPIO48   Board-dependent / optional
-
 ## Prototype Wiring Overview
 
 ```text
