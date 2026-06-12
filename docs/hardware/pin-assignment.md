@@ -34,7 +34,7 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | **GPIO13** | **SD Card MISO** | **Reserved** | **SPI interface for SD card module** |
 | **GPIO14** | **Water ingress sensor** | **Used** | **Digital input / interrupt** |
 | **GPIO15** | **Smoke alarm input** | **Used** | **Digital input / interrupt** |
-| **GPIO16** | **LTE Power Enable** | Reserved | **LTE modem power control** |
+| **GPIO16** | **LTE Power Enable** | **Reserved** | **LTE modem power control** |
 | **GPIO17** | **LTE UART TX** | **Reserved** | **ESP32 TX → LTE RX** |
 | **GPIO18** | **LTE UART RX** | **Reserved** | **ESP32 RX ← LTE TX** |
 | GPIO19 | Free | Available | Future expansion |
@@ -229,10 +229,10 @@ LTE modem, SD card and final enclosure design are outside the scope of the first
 
 ## Notes
 
+## Notes
+
 This pin assignment is not final for production hardware.
 
-It is intended to keep the prototype wiring stable while allowing later migration to:
+It is intended to provide a stable hardware interface definition for Prototype 1 and future PCB revisions.
 
-- a soldered prototype board
-- a custom carrier board
-- a final PCB revision
+Prototype 1 is planned as a soldered carrier board based on the ESP32-S3 DevKitC-1 and shall use the GPIO assignments defined in this document.
