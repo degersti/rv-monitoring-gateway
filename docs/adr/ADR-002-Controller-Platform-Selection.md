@@ -35,8 +35,8 @@ Compared to the classic ESP32 DevKit V1, the ESP32-S3 provides several advantage
 
 ## Consequences
 
-The carrier board will be designed specifically for the ESP32-S3 DevKitC-1 N16R8.
+A carrier board will be designed specifically for the ESP32-S3 DevKitC-1 N16R8.
 
-The classic ESP32 DevKit V1 will only be used as a test platform and will no longer serve as the basis for the project hardware design.
+The existing ESP32 DevKit V1 will only be used as a test platform and will no longer serve as the basis for the project hardware design.
 
 All pin assignments shall be defined centrally within a dedicated board configuration file.
