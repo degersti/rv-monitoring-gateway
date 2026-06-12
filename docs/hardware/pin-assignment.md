@@ -23,8 +23,11 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | SHT31 Temperature / Humidity Sensor | GPIO8 / GPIO9 | Bidirectional | I2C | Primary environmental sensor |
 | House Battery Voltage | GPIO4 | Input | ADC | Via protected voltage divider |
 | Engine Battery Voltage | GPIO5 | Input | ADC | Via protected voltage divider |
-| Water Ingress Sensor | GPIO6 | Input | Digital | Pull-up / pull-down to be defined |
-| Smoke Alarm Input | GPIO7 | Input | Digital | Isolated or protected input recommended |
+| Reserved Analog Input | GPIO6 | Input | ADC | Future analog sensor or diagnostics |
+| Reserved Analog Input | GPIO7 | Input | ADC | Future analog sensor or diagnostics |
+| Water Ingress Sensor | GPIO14 | Input | Digital / Interrupt |  Isolated or protected input recommended|
+| Smoke Alarm Input | GPIO15 | Input | Digital / Interrupt | Isolated or protected input recommended |
+| Reserced Digital Input | GPIO16 | Input | Digital / Interrupt | Isolated or protected input recommended |
 | Status LED | GPIO48 | Output | Digital | Onboard RGB LED on many ESP32-S3 DevKit boards |
 | LTE UART TX | GPIO17 | Output | UART | Reserved for future LTE modem |
 | LTE UART RX | GPIO18 | Input | UART | Reserved for future LTE modem |
@@ -47,11 +50,14 @@ ESP32-S3 DevKitC-1
 │
 ├── Analog Inputs
 │   ├── GPIO4  -> House battery voltage divider
-│   └── GPIO5  -> Engine battery voltage divider
+│   ├── GPIO5  -> Engine battery voltage divider
+│   ├── GPIO6  -> Reserved for voltage devider
+│   └── GPIO7  -> Reserved for voltage devider
 │
 ├── Digital Inputs
-│   ├── GPIO6  -> Water ingress sensor
-│   └── GPIO7  -> Smoke alarm input
+│   ├── GPIO14  -> Water ingress sensor
+│   ├── GPIO15  -> Smoke alarm input
+|   └── GPIO16  -> Reserved
 │
 ├── Reserved LTE Interface
 │   ├── GPIO17 -> LTE UART TX
