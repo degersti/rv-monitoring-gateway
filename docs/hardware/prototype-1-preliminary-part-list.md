@@ -12,7 +12,7 @@
 |---:|---|---|
 | 1 | 12 V input terminal block, 2-pin | Board supply input after external fuse |
 | 1 | Fuse holder or inline fuse | Installed close to battery / supply source |
-| 1 | Traco TSR 1-2450 or TSR 2-2450 switching regulator | 12 V to 5 V supply for ESP32 DevKit |
+| 1 | Traco TSR 2-2450 switching regulator | 12 V to 5 V supply for ESP32 DevKit |
 | 1 | Reverse polarity protection diode or MOSFET module | Recommended before regulator input |
 | 1 | TVS diode for 12 V line | Recommended for onboard supply protection |
 | 1 | Electrolytic capacitor, 100 µF / 25 V | Input bulk capacitor on 12 V side |
