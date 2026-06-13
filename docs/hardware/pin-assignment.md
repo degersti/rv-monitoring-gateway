@@ -37,8 +37,8 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | **GPIO16** | **LTE Power Enable** | **Reserved** | **LTE modem power control** |
 | **GPIO17** | **LTE UART TX** | **Reserved** | **ESP32 TX → LTE RX** |
 | **GPIO18** | **LTE UART RX** | **Reserved** | **ESP32 RX ← LTE TX** |
-| GPIO19 | Free | Available | Future expansion |
-| GPIO20 | Free | Available | Future expansion |
+| GPIO19 | USB D- | Avoid | USB interface |
+| GPIO20 | USB D+ | Avoid | USB interface |
 | GPIO21 | Free | Available | Future expansion |
 | GPIO26 | Not used | Avoid | Internal Flash / PSRAM |
 | GPIO27 | Not used | Avoid | Internal Flash / PSRAM |
@@ -62,39 +62,34 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO45 | Not used | Avoid | Strapping related |
 | GPIO46 | Not used | Avoid | Strapping / input-only limitations |
 | GPIO47 | Free | Available | Future expansion |
-| GPIO48 | Status LED (Board-dependent) | Optional | Some DevKit revisions |
+| GPIO48 | Status LED | Optional | Available on DevKitC-1 |
 
 ---
 ## Prototype Wiring Overview
 
 ```text
-ESP32-S3 DevKitC-1
-│
-├── I2C Bus
-│   ├── GPIO8  -> SDA
-│   └── GPIO9  -> SCL
-│
-├── Analog Inputs
-│   ├── GPIO4  -> House battery voltage divider
-│   ├── GPIO5  -> Engine battery voltage divider
-│   ├── GPIO6  -> Reserved for voltage devider
-│   └── GPIO7  -> Reserved for voltage devider
-│
-├── Digital Inputs
-│   ├── GPIO14  -> Water ingress sensor
-│   └── GPIO15  -> Smoke alarm input
-|  
-│
-├── Reserved LTE Interface
-│   ├── GPIO17 -> LTE UART TX
-│   ├── GPIO18 -> LTE UART RX
-│   └── GPIO16 -> LTE power enable
-│
-└── Reserved SD Card Interface
-    ├── GPIO10 -> SD CS
-    ├── GPIO11 -> SD MOSI
-    ├── GPIO12 -> SD SCK
-    └── GPIO13 -> SD MISO
+3V3  / SHT31 VCC        ----|  ESP32 |--- GND
+GPIO00 / BOOT avoid     ----|        |--- RST / Reset
+GPIO01 / free           ----|        |--- GPIO46 / avoid
+GPIO02 / free           ----|        |--- GPIO45 / avoid
+GPIO03 / avoid          ----|        |--- GPIO44 / USB Serial RX avoid
+GPIO04 / House ADC      ----|        |--- GPIO43 / USB Serial TX avoid
+GPIO05 / Engine ADC     ----|        |--- GPIO42 / free
+GPIO06 / Analog reserve ----|        |--- GPIO41 / free
+GPIO07 / Analog reserve ----|        |--- GPIO40 / free
+GPIO08 / I2C SDA        ----|        |--- GPIO39 / free
+GPIO09 / I2C SCL        ----|        |--- GPIO38 / Status LED optional
+GPIO10 / SD CS future   ----|        |--- GPIO37 / free
+GPIO11 / SD MOSI future ----|        |--- GPIO36 / free
+GPIO12 / SD SCK future  ----|        |--- GPIO35 / free
+GPIO13 / SD MISO future ----|        |--- GPIO34 / free
+GPIO14 / Water Input    ----|        |--- GPIO33 / free
+GPIO15 / Smoke Input    ----|        |--- GPIO26 / avoid
+GPIO16 / LTE EN future  ----|        |--- GPIO21 / free
+GPIO17 / LTE TX future  ----|        |--- GPIO20 / free
+GPIO18 / LTE RX future  ----|        |--- GPIO19 / free
+5V0  / +5V from TSR     ----|        |--- GPIO48 / Status LED optional
+GND  / GND              ----|        |--- GPIO47 / free
 ```
 
 ---
@@ -196,6 +191,8 @@ The following pins are intentionally avoided for normal prototype functions:
 |------|--------|
 | GPIO0 | Boot / strapping related |
 | GPIO3 | Avoid for prototype stability |
+| GPIO19 | Native USB D- |
+| GPIO20 | Native USB D+ |
 | GPIO45 | Strapping related |
 | GPIO46 | Strapping / input-only limitations depending on board |
 
