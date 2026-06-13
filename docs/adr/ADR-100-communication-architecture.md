@@ -39,6 +39,16 @@ MQTT is selected as the primary communication protocol for telemetry and alarm t
 
 The gateway shall publish measurement data and alarm events to an MQTT broker. Backend services, dashboards, databases, or notification handlers may subscribe to the relevant topics and process the data independently.
 
+## WiFi Connectivity Considerations
+
+For WiFi-based internet connectivity, MQTT shall preferably be transported over secure WebSockets using TLS on port 443.
+
+This decision is made because Prototype 1 may rely on harbour, marina, campground, or public WiFi networks where standard MQTT ports such as 1883 or 8883 may be blocked.
+
+The firmware shall therefore avoid assuming direct TCP-based MQTT connectivity and shall be designed so that the MQTT transport can be configured.
+
+LTE connectivity remains a future extension to support installations where no suitable WiFi network is available.
+
 ## Rationale
 
 MQTT provides a good balance between simplicity, efficiency, and expandability. It is lightweight enough for ESP32-based embedded devices, while still supporting important IoT features such as retained messages, event-driven communication, and Last Will and Testament messages for offline detection.
