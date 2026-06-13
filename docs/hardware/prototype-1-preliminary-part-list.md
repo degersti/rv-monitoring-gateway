@@ -22,6 +22,7 @@
 | 1 | Terminal block, 2-pin | Water detector loop |
 | 1 | Terminal block, 2-pin | Smoke / fire detector loop |
 | 4 | Fuse holder | Gateway supply, sensor supply, house sense, engine sense |
+| 3 | TVS diode, unidirectional, 12 V line | Transient protection on onboard supply input |
 
 ## Power Input and Supply
 
@@ -30,7 +31,6 @@
 | 1 | Traco TSR 1-2450 or TSR 2-2450 switching regulator | 12 V to 5 V supply for ESP32 DevKit; TSR 2-2450 if LTE reserve is desired |
 | 1 | P-MOSFET, e.g. FQP27P06 | Reverse polarity protection before regulator input |
 | 1 | 100 kΩ resistor | MOSFET gate pull-down resistor |
-| 1 | TVS diode, unidirectional, 12 V line | Transient protection on onboard supply input |
 | 1 | Electrolytic capacitor, 100 µF / 50 V | Input bulk capacitor before TSR regulator |
 | 1 | Electrolytic capacitor, 100 µF / 10 V or 16 V | Output bulk capacitor on 5 V rail |
 | 1 | Ceramic capacitor, 100 nF / 50 V | Input high-frequency decoupling near TSR regulator |
@@ -42,12 +42,11 @@ For each battery input:
 
 | Qty | Part | Notes |
 |---:|---|---|
-| 1 | TVS diode, unidirectional, 12 V line | Transient protection on onboard supply input |
 | 1 | 100 kΩ resistor, 1% | Upper divider resistor |
 | 1 | 18 kΩ resistor, 1% | Lower divider resistor |
 | 1 | 1 kΩ resistor | ADC series resistor |
 | 1 | 100 nF capacitor | ADC filter capacitor |
-| 2 | Schottky diodes | Clamp to 3V3 and GND |
+| 2 | 1N5819 Schottky diode | Clamped to 3V3 and GND |
 
 For two battery inputs, multiply by 2.
 
@@ -61,7 +60,7 @@ For each dry-contact input:
 | 1 | 10 kΩ resistor, 1% | Lower divider resistor |
 | 1 | 1 kΩ resistor | GPIO series protection |
 | 1 | 100 nF ceramic capacitor | Optional input debounce / noise filter from GPIO input to GND |
-| 2 | Schottky diodes | Clamp to 3V3 and GND |
+| 2 | 1N5819 Schottky diode | Clamped to 3V3 and GND |
 
 For water + smoke, multiply by 2.
 
