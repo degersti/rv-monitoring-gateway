@@ -13,7 +13,6 @@ The project is currently in an early development phase and follows an incrementa
 - `docs/` – Whitepaper and project documentation
 - `development/` – Individual proof-of-concept projects
 - `firmware/` – Integrated gateway firmware
-- `hardware/` – Schematics, wiring diagrams and hardware documentation
 
 ## Development Roadmap
 
