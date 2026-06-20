@@ -39,6 +39,12 @@ bool initHardware(void)
 {
     // Configure ADC resolution
     analogReadResolution(ADC_RESOLUTION);
+
+    analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
+    analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
+
+    pinMode(PIN_HOUSE_ADC, INPUT);
+    pinMode(PIN_ENGINE_ADC, INPUT);
     
     // Initialize I2C interface
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
@@ -56,24 +62,75 @@ bool initHardware(void)
     return true;
 }
 /*************************************************
- * Function:    readBatteryVoltages
- * Description: Reads and converts battery voltages
- *              from ADC inputs.
- * Parameters:  data - Sensor data structure
- * Returns:     None (void function)
- * Notes:       Applies ADC scaling and voltage
- *              divider compensation.
+ * Function:    readVoltageRaw
+ * Description: Reads an ADC channel multiple times,
+ *              calculates the average value and
+ *              converts it into the corresponding
+ *              input voltage before calibration.
+ * Parameters:  pin - ADC input pin
+ * Returns:     Raw input voltage in volts
+ * Notes:       Applies ADC reference scaling and
+ *              voltage divider compensation.
+ *              No calibration is applied.
  *************************************************/
- 
-void readBatteryVoltages(SensorData& data)
+float readVoltageRaw(int pin)
 {
-    // Read ADC values for house and engine battery voltages
-    int houseAdcValue = analogRead(PIN_HOUSE_ADC);  
-    int engineAdcValue = analogRead(PIN_ENGINE_ADC);   
+    uint32_t adcSum = 0;
 
-    // Convert ADC values to voltages (assuming a 3.3V reference and a voltage divider)
-    data.houseBatteryVoltage = (houseAdcValue / (float)ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
-    data.engineBatteryVoltage = (engineAdcValue / (float)ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE * VOLTAGE_DIVIDER_RATIO;
+    for (uint8_t i = 0; i < SAMPLE_COUNT; i++)
+    {
+        adcSum += analogRead(pin);
+        delay(SAMPLE_DELAY_MS);
+    }
+
+    float adcRawAverage = adcSum / (float)SAMPLE_COUNT;
+
+    float adcVoltage =
+        (adcRawAverage / (float)ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE;
+
+    float inputVoltage =
+        adcVoltage * VOLTAGE_DIVIDER_RATIO;
+
+    return inputVoltage;
+}
+/*************************************************
+ * Function:    applyCalibration
+ * Description: Applies a linear calibration to a
+ *              measured voltage value.
+ * Parameters:  voltage - Raw voltage value
+ *              gain    - Calibration gain factor
+ *              offset  - Calibration offset
+ * Returns:     Calibrated voltage in volts
+ * Notes:       Uses the formula:
+ *              calibrated = voltage * gain + offset
+ *************************************************/
+float applyCalibration(float voltage, float gain, float offset)
+{
+    return voltage * gain + offset;
+}
+/*************************************************
+ * Function:    readBatteryVoltages
+ * Description: Reads the raw battery voltages from
+ *              the ADC input channels and applies
+ *              channel-specific calibration.
+ * Parameters:  data - Sensor data structure to be
+ *              updated with calibrated voltages.
+ * Returns:     None
+ * Notes:       readVoltageRaw() performs ADC averaging,
+ *              ADC scaling and voltage divider
+ *              compensation.
+ *              applyCalibration() applies gain and
+ *              offset correction.
+ *************************************************/
+ void readBatteryVoltages(SensorData& data)
+{
+    // Read raw, divider-compensated battery voltages
+    float rawHouseVoltage = readVoltageRaw(PIN_HOUSE_ADC);
+    float rawEngineVoltage = readVoltageRaw(PIN_ENGINE_ADC);
+     
+    // Apply channel-specific calibration and store results
+    data.houseBatteryVoltage = applyCalibration(rawHouseVoltage, CAL_GAIN_HOUSE_VOLTAGE, CAL_OFFSET_HOUSE_VOLTAGE);
+    data.engineBatteryVoltage = applyCalibration(rawEngineVoltage, CAL_GAIN_ENGINE_VOLTAGE, CAL_OFFSET_ENGINE_VOLTAGE);
 } 
 /*************************************************
  * Function:    readSHT31

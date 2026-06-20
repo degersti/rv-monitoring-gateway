@@ -33,6 +33,19 @@ constexpr float VOLTAGE_DIVIDER_RATIO =
 constexpr uint8_t PIN_HOUSE_ADC = 4;
 constexpr uint8_t PIN_ENGINE_ADC = 5;
 
+// Calibration
+// Pin 4, optimized for apprx. 9–15 V
+const float CAL_GAIN_HOUSE_VOLTAGE = 1.022f;
+const float CAL_OFFSET_HOUSE_VOLTAGE = 0.439f;
+
+// Pin 5, optimized for apprx. 9–15 V
+const float CAL_GAIN_ENGINE_VOLTAGE = 1.025f;
+const float CAL_OFFSET_ENGINE_VOLTAGE = 0.428f;
+
+// Sampling
+const uint8_t SAMPLE_COUNT = 32;
+const uint16_t SAMPLE_DELAY_MS = 2;
+
 // Alarm Inputs
 constexpr uint8_t PIN_WATER_ALARM = 12;
 constexpr uint8_t PIN_SMOKE_ALARM = 13;
