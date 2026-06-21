@@ -2,6 +2,19 @@
 
 #include <Client.h>
 
-bool connectWifi(void);
+enum class WiFiConnectionState
+{
+    IDLE,
+    CONNECTING,
+    CONNECTED,
+    FAILED
+};
+
+void initWifi(void);
+WiFiConnectionState processWifiConnection(void);
+void resetWifiConnection(void);
 bool getWiFiConnectionStatus(void);
 Client& getWifiClient(void);
+
+// Compatibility wrapper. Prefer processWifiConnection() in the state machine.
+bool connectWifi(void);

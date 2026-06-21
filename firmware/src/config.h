@@ -60,3 +60,14 @@ constexpr uint8_t PIN_I2C_SCL = 41;
  * OTHER CONFIGURATION
  ******************************************************/
 constexpr uint32_t TELEMETRY_INTERVAL_MS = 10000;
+
+// WiFi connection handling
+constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
+constexpr uint32_t WIFI_RETRY_INTERVAL_MS = 5000;
+constexpr uint32_t WIFI_STATUS_PRINT_INTERVAL_MS = 500;
+
+// MQTT connection handling
+constexpr uint32_t MQTT_RETRY_INTERVAL_MS = 5000;
+
+// ESP32-S3 DevKitC onboard RGB LED
+constexpr uint8_t PIN_RGB_LED = 48;

@@ -8,7 +8,7 @@
  * access to the secure network client.
  *
  * Responsibilities:
- * - WiFi connection management
+ * - Non-blocking WiFi connection management
  * - Connection status monitoring
  * - Secure client provisioning
  *
@@ -17,6 +17,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "secrets.h"
+#include "wifi_manager.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
@@ -27,72 +28,152 @@ const char* wifi_password = WIFI_PASSWORD;
 // Secure TCP/TLS client used by MQTT
 static WiFiClientSecure espClient;
 
-/*************************************************
- * Function:    connectWifi
- * Description: Connects the ESP32 to the configured 
- *              WiFi network.
- * Parameters:  None
- * Returns:     true  - WiFi connected successfully
- *              false - Connection timeout or failed
- * Notes:       Uses a fixed connection timeout and 
- *              configures the TLS client to accept 
- *              insecure certificates.
- *************************************************/
-bool connectWifi(void)
-{
-    WiFi.begin(wifi_ssid, wifi_password);
+static WiFiConnectionState wifiState = WiFiConnectionState::IDLE;
+static uint32_t connectStartTime = 0;
+static uint32_t lastRetryTime = 0;
+static uint32_t lastStatusPrintTime = 0;
 
+static void startWifiConnection(void)
+{
     Serial.print("Connecting to WiFi");
 
-    const uint32_t timeoutMs = 10000;
-    uint32_t startTime = millis();
+    WiFi.disconnect(true);
+    delay(10);
+    WiFi.begin(wifi_ssid, wifi_password);
 
-    while (WiFi.status() != WL_CONNECTED)
+    connectStartTime = millis();
+    lastStatusPrintTime = connectStartTime;
+    wifiState = WiFiConnectionState::CONNECTING;
+}
+
+/*************************************************
+ * Function:    initWifi
+ * Description: Initializes WiFi handling and the
+ *              secure client used by MQTT.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Does not block and does not start a
+ *              connection attempt by itself.
+ *************************************************/
+void initWifi(void)
+{
+    WiFi.mode(WIFI_STA);
+    espClient.setInsecure();
+    wifiState = WiFiConnectionState::IDLE;
+}
+
+/*************************************************
+ * Function:    processWifiConnection
+ * Description: Handles WiFi connection progress
+ *              without blocking the main loop.
+ * Parameters:  None
+ * Returns:     Current WiFi connection state
+ * Notes:       Must be called repeatedly while the
+ *              application is trying to connect.
+ *************************************************/
+WiFiConnectionState processWifiConnection(void)
+{
+    const uint32_t now = millis();
+
+    if (WiFi.status() == WL_CONNECTED)
     {
-        if (millis() - startTime > timeoutMs)
+        if (wifiState != WiFiConnectionState::CONNECTED)
+        {
+            Serial.println();
+            Serial.println("WiFi connected");
+            Serial.print("IP Address: ");
+            Serial.println(WiFi.localIP());
+        }
+
+        wifiState = WiFiConnectionState::CONNECTED;
+        return wifiState;
+    }
+
+    if (wifiState == WiFiConnectionState::CONNECTED)
+    {
+        Serial.println("WiFi disconnected");
+        wifiState = WiFiConnectionState::IDLE;
+    }
+
+    if (wifiState == WiFiConnectionState::IDLE)
+    {
+        startWifiConnection();
+        return wifiState;
+    }
+
+    if (wifiState == WiFiConnectionState::FAILED)
+    {
+        if (now - lastRetryTime >= WIFI_RETRY_INTERVAL_MS)
+        {
+            startWifiConnection();
+        }
+
+        return wifiState;
+    }
+
+    if (wifiState == WiFiConnectionState::CONNECTING)
+    {
+        if (now - lastStatusPrintTime >= WIFI_STATUS_PRINT_INTERVAL_MS)
+        {
+            Serial.print(".");
+            lastStatusPrintTime = now;
+        }
+
+        if (now - connectStartTime >= WIFI_CONNECT_TIMEOUT_MS)
         {
             Serial.println();
             Serial.println("WiFi connection timeout");
 
-            WiFi.disconnect();
-            return false;
+            WiFi.disconnect(true);
+            lastRetryTime = now;
+            wifiState = WiFiConnectionState::FAILED;
         }
-
-        delay(500);
-        Serial.print(".");
     }
 
-    Serial.println();
-    Serial.println("WiFi connected");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-
-    espClient.setInsecure();
-
-    return true;
+    return wifiState;
 }
+
+/*************************************************
+ * Function:    resetWifiConnection
+ * Description: Resets WiFi connection handling so
+ *              the next process call starts again.
+ *************************************************/
+void resetWifiConnection(void)
+{
+    WiFi.disconnect(true);
+    wifiState = WiFiConnectionState::IDLE;
+    connectStartTime = 0;
+    lastRetryTime = 0;
+    lastStatusPrintTime = 0;
+}
+
+/*************************************************
+ * Function:    connectWifi
+ * Description: Compatibility wrapper for older code.
+ *              Starts or continues a non-blocking
+ *              connection attempt.
+ * Returns:     true  - WiFi connected
+ *              false - WiFi not connected yet or failed
+ *************************************************/
+bool connectWifi(void)
+{
+    return processWifiConnection() == WiFiConnectionState::CONNECTED;
+}
+
 /*************************************************
  * Function:    getWiFiConnectionStatus
- * Description: Returns the current WiFi connection 
+ * Description: Returns the current WiFi connection
  *              state.
- * Parameters:  None
- * Returns:     true  - WiFi connected
- *               false - WiFi disconnected
- * Notes:       Wrapper around WiFi.status().
  *************************************************/
 bool getWiFiConnectionStatus(void)
 {
     return (WiFi.status() == WL_CONNECTED);
 }
+
 /*************************************************
  * Function:    getWifiClient
- * Description: Provides access to the secure WiFi 
+ * Description: Provides access to the secure WiFi
  *              client used for MQTT communication.
- * Parameters:  None
- * Returns:     Reference to the WiFiClientSecure 
- *              instance
- * Notes:       The client is configured in 
- *              connectWifi().
  *************************************************/
 Client& getWifiClient(void)
 {

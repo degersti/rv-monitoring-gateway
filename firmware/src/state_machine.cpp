@@ -23,12 +23,13 @@
 #include "wifi_manager.h"
 #include "mqtt_client.h"
 #include "data_manager.h"
+#include "status_indicator.h"
 
 // Timestamp of last telemetry transmission
 static unsigned long lastTelemetry = 0;
 
 // Temporary JSON payload buffer
-static  char payload[TELEMETRY_PAYLOAD_SIZE];
+static char payload[TELEMETRY_PAYLOAD_SIZE];
 
 // Current sensor and alarm values
 static SensorData data = {
@@ -43,92 +44,125 @@ static SensorData data = {
 // Application starts in BOOT state after power-up
 static ProgramState state = ProgramState::BOOT;
 
-void runStateMachine() {
-    switch (state) {
-       /*****************************************************
-        * STATE: BOOT
-        * Entry state after reset or power-up.
-        * Performs basic startup handling before hardware 
-        * initialization.
-        *****************************************************/
+static bool isAlarmActive(void)
+{
+    return data.waterAlarm || data.smokeAlarm;
+}
+
+void runStateMachine()
+{
+    switch (state)
+    {
+        /*****************************************************
+         * STATE: BOOT
+         * Entry state after reset or power-up.
+         *****************************************************/
         case ProgramState::BOOT:
             Serial.println("BOOT");
+            setIndicatorState(IndicatorState::BOOT);
             state = ProgramState::INIT_HARDWARE;
             break;
+
         /*****************************************************
-        * STATE: INIT_HARDWARE
-        * Initializes all hardware peripherals and sensors 
-        * required by the application.
-        *******************************************************/
+         * STATE: INIT_HARDWARE
+         * Initializes all hardware peripherals and sensors.
+         *****************************************************/
         case ProgramState::INIT_HARDWARE:
-            if (initHardware()) {
-                state = ProgramState::CONNECT_WIFI;   
-            } else {
-                state = ProgramState::ERROR;
-            }
-            break;
-        /*****************************************************
-        * STATE: CONNECT_WIFI
-        * Establishes a WiFi connection if required. 
-        * Falls back to local buffering if no network connection 
-        * is available.
-        *******************************************************/
-        case ProgramState::CONNECT_WIFI:
-            if (getWiFiConnectionStatus())
+            initWifi();
+            initMqtt(getWifiClient());
+
+            if (initHardware())
             {
-                state = ProgramState::CONNECT_MQTT;
-            }
-            else if (connectWifi())
-            {
-                state = ProgramState::CONNECT_MQTT;
+                state = ProgramState::CONNECT_WIFI;
             }
             else
             {
-                state = ProgramState::BUFFER_DATA;
+                state = ProgramState::ERROR;
             }
             break;
+
         /*****************************************************
-        * STATE: CONNECT_MQTT
-        * Establishes a connection to the MQTT broker.
-        * Falls back to local buffering if the broker
-        * cannot be reached.
-        *******************************************************/
-        case ProgramState::CONNECT_MQTT:
-            if (getMqttConnectionStatus())
+         * STATE: CONNECT_WIFI
+         * Non-blocking WiFi connection handling.
+         *****************************************************/
+        case ProgramState::CONNECT_WIFI:
+        {
+            WiFiConnectionState wifiState = processWifiConnection();
+
+            if (wifiState == WiFiConnectionState::CONNECTED)
             {
-                state = ProgramState::READ_SENSORS;
+                setIndicatorState(IndicatorState::WIFI_CONNECTED);
+                state = ProgramState::CONNECT_MQTT;
             }
-            else if (!getMqttConnectionStatus())
-            {   
-                initMqtt(getWifiClient()); 
-                if(mqttConnect())
-                {
-                state = ProgramState::READ_SENSORS;
-                }
-                else    
-                {
-                    state = ProgramState::BUFFER_DATA;
-                }
+            else if (wifiState == WiFiConnectionState::FAILED)
+            {
+                setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                state = ProgramState::BUFFER_DATA;
             }
-            break; 
+            else
+            {
+                setIndicatorState(IndicatorState::WIFI_CONNECTING);
+            }
+            break;
+        }
+
         /*****************************************************
-        * STATE: READ_SENSORS
-        * Acquires the latest sensor and alarm values.
-        ********************************************************/
+         * STATE: CONNECT_MQTT
+         * MQTT connection handling with retry timing.
+         *****************************************************/
+        case ProgramState::CONNECT_MQTT:
+        {
+            if (!getWiFiConnectionStatus())
+            {
+                resetMqttConnection();
+                state = ProgramState::CONNECT_WIFI;
+                break;
+            }
+
+            MqttConnectionState mqttState = processMqttConnection();
+
+            if (mqttState == MqttConnectionState::CONNECTED)
+            {
+                setIndicatorState(IndicatorState::MQTT_CONNECTED);
+                state = ProgramState::READ_SENSORS;
+            }
+            else if (mqttState == MqttConnectionState::FAILED)
+            {
+                setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                state = ProgramState::BUFFER_DATA;
+            }
+            else
+            {
+                setIndicatorState(IndicatorState::MQTT_CONNECTING);
+            }
+            break;
+        }
+
+        /*****************************************************
+         * STATE: READ_SENSORS
+         * Acquires the latest sensor and alarm values.
+         *****************************************************/
         case ProgramState::READ_SENSORS:
-            // Read all sensor data
             readBatteryVoltages(data);
             readSHT31(data);
             readAlarms(data);
+
+            if (isAlarmActive())
+            {
+                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+            }
+
             state = ProgramState::PUBLISH_DATA;
-            break;     
+            break;
+
         /*****************************************************
          * STATE: PUBLISH_DATA
          * Creates and publishes the telemetry payload.
-         ********************************************************/
+         *****************************************************/
         case ProgramState::PUBLISH_DATA:
             if (!getWiFiConnectionStatus())
             {
+                resetMqttConnection();
                 state = ProgramState::CONNECT_WIFI;
                 break;
             }
@@ -139,10 +173,17 @@ void runStateMachine() {
                 break;
             }
 
+            mqttLoop();
             getTelemetry(payload, data);
 
             if (mqttPublish(payload))
             {
+                if (!isAlarmActive())
+                {
+                    setIndicatorState(IndicatorState::MQTT_CONNECTED);
+                }
+
+                lastTelemetry = millis();
                 state = ProgramState::WAIT_NEXT_CYCLE;
             }
             else
@@ -150,30 +191,56 @@ void runStateMachine() {
                 state = ProgramState::CONNECT_MQTT;
             }
             break;
+
         /*****************************************************
-        * STATE: BUFFER_DATA
-        *  Stores telemetry data locally while network
-        * communication is unavailable.
-        *******************************************************/
+         * STATE: BUFFER_DATA
+         * Stores telemetry data locally while network
+         * communication is unavailable.
+         *****************************************************/
         case ProgramState::BUFFER_DATA:
             /* NO CURRENT IMPLEMENTATION */
             state = ProgramState::WAIT_NEXT_CYCLE;
             break;
+
         /*****************************************************
          * STATE: WAIT_NEXT_CYCLE
-        * Idle state between telemetry transmissions.
-        * Maintains active MQTT connections and waits
-        * for the next measurement interval.
-         ********************************************************/
+         * Idle state between telemetry transmissions.
+         * Maintains active MQTT connections and waits for
+         * the next measurement interval.
+         *****************************************************/
         case ProgramState::WAIT_NEXT_CYCLE:
-            if (getWiFiConnectionStatus() && getMqttConnectionStatus())
+            if (!getWiFiConnectionStatus())
             {
-                mqttLoop();
+                resetMqttConnection();
+                state = ProgramState::CONNECT_WIFI;
+                break;
             }
-            if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS) {
-                lastTelemetry = millis();
+
+            if (!getMqttConnectionStatus())
+            {
+                state = ProgramState::CONNECT_MQTT;
+                break;
+            }
+
+            mqttLoop();
+
+            if (!isAlarmActive())
+            {
+                setIndicatorState(IndicatorState::MQTT_CONNECTED);
+            }
+
+            if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS)
+            {
                 state = ProgramState::READ_SENSORS;
-            }         
+            }
+            break;
+
+        /*****************************************************
+         * STATE: ERROR
+         * Critical system error.
+         *****************************************************/
+        case ProgramState::ERROR:
+            setIndicatorState(IndicatorState::ERROR_ACTIVE);
             break;
     }
-};
+}
