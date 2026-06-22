@@ -1,7 +1,6 @@
 /*************************************************
  * File:        sensor_manager.cpp
  * Author:      Markus Gerstenberg
- * Date:        2026-06-18
  *
  * Description:
  * Provides access to all hardware sensors and

@@ -1,7 +1,6 @@
 /*************************************************
  * File:        mqtt_client.cpp
  * Author:      Markus Gerstenberg
- * Date:        2026-06-18
  *
  * Description:
  * Handles MQTT broker communication including

@@ -1,19 +1,19 @@
 /*************************************************
  * File:        status_indicator.cpp
- * Description: Implements the system status
- *              indication using the onboard RGB
- *              NeoPixel LED.
+ * Author:      Markus Gerstenberg
  *
- *              The module provides visual feedback
- *              for boot, network, MQTT, alarm and
- *              error states according to ADR-007.
+ * Description:
+ * Implements the system status indicator.
  *
- *              Telemetry activity is indicated by
- *              a temporary flash sequence without
- *              affecting the current system state.
+ * Responsibilities:
+ * - RGB LED control
+ * - Status visualization
+ * - Alarm indication
+ * - Telemetry activity indication
+ *
  *************************************************/
 
- #include "status_indicator.h"
+#include "status_indicator.h"
 #include <Adafruit_NeoPixel.h>
 #include "config.h"
 
