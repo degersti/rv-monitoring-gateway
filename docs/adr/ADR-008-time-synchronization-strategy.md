@@ -24,7 +24,7 @@ The system requires a time source that:
 
 * survives Deep Sleep cycles
 * supports offline operation
-* automatically synchronizes when Internet connectivity becomes available
+* can be periodically synchronized with an external reference
 * minimizes hardware complexity and cost
 
 An external real-time clock (RTC) module was considered but would increase hardware complexity, firmware complexity, and component count.
@@ -33,13 +33,14 @@ An external real-time clock (RTC) module was considered but would increase hardw
 
 The gateway shall use the ESP32 internal RTC-backed system clock as its local time source.
 
-Network Time Protocol (NTP) shall be used as the authoritative time source whenever Internet connectivity is available.
+Network Time Protocol (NTP) shall be used as the authoritative time source.
 
 After a successful NTP synchronization:
 
-1. The ESP32 system clock shall be updated.
-2. The internal RTC shall maintain the system time during Deep Sleep.
-3. The current time shall be obtained from the operating system time functions.
+* The ESP32 system clock shall be updated.
+* The timestamp of the last successful synchronization shall be stored.
+* The internal RTC shall maintain the system time during Deep Sleep.
+* The current time shall be obtained from the operating system time functions.
 
 The firmware shall not manually advance timestamps based on the planned Deep Sleep duration.
 
@@ -48,6 +49,13 @@ The same timestamp source shall be used for:
 * timer wake-ups
 * GPIO wake-ups
 * normal operation
+
+The gateway shall perform an NTP synchronization when:
+
+* no valid time reference exists
+* the configured re-synchronization interval has elapsed since the last successful synchronization
+
+The re-synchronization interval shall be configurable with a default re-synchronization interval of 24 hours.
 
 No external RTC module shall be used in Prototype 1.
 
@@ -78,76 +86,30 @@ Example:
 }
 ```
 
-## Time Synchronization
+## Timestamp Availability
 
-The gateway shall attempt NTP synchronization whenever:
+The firmware shall maintain an internal time state.
 
-* a network connection becomes available
-* the current system time is invalid
-* periodic re-synchronization is required to correct RTC drift
-
-If NTP synchronization succeeds:
-
-* the system time shall be updated
-* the time validity flag shall be set
-
-If NTP synchronization fails:
-
-* the gateway shall continue using the last valid RTC-maintained system time
-* the time validity state shall remain unchanged
-
-## Deep Sleep Behavior
-
-During Deep Sleep:
-
-* the ESP32 internal RTC continues running
-* the system time continues advancing automatically
-
-After wake-up:
-
-* the current time shall be read from the system clock
-* no manual timestamp correction shall be performed
-* no Deep Sleep duration calculations shall be performed
-
-This behavior applies equally to:
-
-* timer wake-ups
-* GPIO wake-ups
-
-## Timestamp Validity
-
-The firmware shall maintain a time validity state.
-
-A timestamp is considered valid when:
+A valid absolute timestamp is available when:
 
 * at least one successful NTP synchronization has occurred since power-up
 
-A timestamp is considered invalid when:
+No valid absolute timestamp is available when:
 
 * the device has never synchronized its clock
 * the device has experienced complete power loss and has not yet re-synchronized
 
-When timestamps are invalid, measurements and alarm events may still be recorded and transmitted, but shall be marked accordingly.
+If no valid absolute timestamp is available, measurements and alarm events may still be buffered locally using a relative RTC-based time reference.
 
-Example:
+After a successful NTP synchronization, buffered measurements may be assigned absolute UTC timestamps using the elapsed RTC time between measurement acquisition and synchronization.
 
-```json
-{
-  "timestamp": 0,
-  "timestampValid": false
-}
+The reconstructed timestamp shall be calculated as:
+
+```text
+timestamp = ntp_time_at_sync - (rtc_time_at_sync - rtc_time_at_measurement)
 ```
 
-or
-
-```json
-{
-  "timestamp": 1782212400,
-  "timestampValid": false
-}
-```
-
-depending on implementation preference.
+Only measurements with valid absolute timestamps shall be transmitted to external systems.
 
 ## Consequences
 
@@ -158,51 +120,19 @@ depending on implementation preference.
 * Time survives Deep Sleep cycles.
 * Supports offline data buffering.
 * Supports accurate timestamping of GPIO alarm events.
+* Supports reconstruction of measurements acquired before the first successful NTP synchronization.
 * Simple firmware implementation.
 * Uses native ESP32 timekeeping mechanisms.
 * Automatic correction of RTC drift through periodic NTP synchronization.
+* Reduced network traffic and power consumption compared to synchronizing before every transmission.
 
 ### Negative
 
 * Time is lost after complete power removal.
 * Long-term accuracy depends on RTC drift between NTP synchronizations.
-* Offline operation after power loss cannot provide valid timestamps until network access is restored.
-
-## Alternatives Considered
-
-### External RTC Module (DS3231)
-
-Advantages:
-
-* Maintains time during complete power loss.
-* Higher long-term accuracy.
-* Battery-backed operation.
-
-Disadvantages:
-
-* Additional hardware cost.
-* Increased PCB complexity.
-* Additional firmware maintenance.
-* Not required for Prototype 1.
-
-### Manual Timestamp Advancement
-
-Approach:
-
-* Store timestamp before Deep Sleep.
-* Store planned sleep duration.
-* Add sleep duration after wake-up.
-
-Advantages:
-
-* Independent of RTC-based system time.
-
-Disadvantages:
-
-* Unnecessary because the ESP32 RTC maintains system time during Deep Sleep.
-* Incorrect for asynchronous GPIO wake-ups.
-* More complex implementation.
-* Higher risk of timestamp errors.
+* Reconstruction accuracy depends on the RTC time base.
+* Buffered measurements cannot be assigned absolute timestamps until a successful NTP synchronization has occurred.
+* Timestamp accuracy degrades gradually as the time since the last synchronization increases.
 
 ## Implementation Notes
 
@@ -213,10 +143,24 @@ time(nullptr);
 gettimeofday();
 ```
 
+The Time Manager shall store:
+
+```cpp
+lastNtpSyncTimestamp
+```
+
+and determine whether re-synchronization is required using:
+
+```cpp
+(time(nullptr) - lastNtpSyncTimestamp) >= ntpSyncInterval
+```
+
 A dedicated Time Manager module shall be responsible for:
 
 * NTP synchronization
-* time validity tracking
+* RTC time tracking
+* timestamp reconstruction
+* synchronization interval management
 * providing timestamps to application modules
 
 The Time Manager shall provide a single interface for obtaining timestamps throughout the firmware.
