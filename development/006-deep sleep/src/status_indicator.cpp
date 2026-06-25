@@ -151,8 +151,7 @@ void initStatusIndicator(void)
     rgbLed.setBrightness(32);
     rgbLed.show();
 
-    currentState = IndicatorState::BOOT;
-    setRgb(255, 180, 0);
+    currentState = IndicatorState::OFF;
 }
 
 /*************************************************
@@ -215,12 +214,8 @@ void updateStatusIndicator(void)
     switch (currentState)
     {
         case IndicatorState::BOOT:
-            setRgb(255, 180, 0);
+            blinkRgb(255, 180, 0, 100);
             break;
-
-        case IndicatorState::DEBUG_CONNECT:
-            blinkRgb(255,180,0,100);
-            break;   
              
         case IndicatorState::WIFI_CONNECTING:
             blinkRgb(0, 0, 255, 1000);
@@ -246,7 +241,7 @@ void updateStatusIndicator(void)
             blinkRgb(255, 0, 0, 150);
             break;
 
-        case IndicatorState::DEEP_SLEEP:
+        case IndicatorState::OFF:
             setOff();
             break;
     }

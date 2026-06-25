@@ -42,6 +42,7 @@ The RGB LED shall display the highest-priority active state according to the fol
 | State              | Color  | Pattern    |
 | ------------------ | ------ | ---------- |
 | Boot               | Yellow | Steady on  |
+| Debug Connect      | Yellow | Fast blink |
 | Network connecting | Blue   | Slow blink |
 | Network connected  | Blue   | Steady on  |
 | MQTT connecting    | Green  | Slow blink |
