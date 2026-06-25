@@ -34,8 +34,8 @@ Deep sleep is therefore never disabled by the debug input.
 
 Wake-up sources are configured independently of the debug mode and currently consist of:
 
-Timer wake-up
-External interrupt wake-up (GPIO12 / GPIO13)
+* Timer wake-up
+* External interrupt wake-up (GPIO12 / GPIO13)
 
 ## Consequences
 
