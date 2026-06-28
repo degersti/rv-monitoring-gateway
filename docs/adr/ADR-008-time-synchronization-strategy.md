@@ -61,6 +61,10 @@ No external RTC module shall be used in Prototype 1.
 
 If the gateway experiences a complete power loss or reset before a successful NTP synchronization has occurred, the system time shall be considered invalid.
 
+If no valid absolute time is available after power-up, the Time Manager shall initialize the ESP32 system clock to Unix timestamp 0.
+
+The running system clock shall then be used as a relative time reference until the first successful NTP synchronization.
+
 ## Time Representation
 
 All timestamps shall be represented internally as Unix timestamps in Coordinated Universal Time (UTC).
@@ -99,14 +103,16 @@ No valid absolute timestamp is available when:
 * the device has never synchronized its clock
 * the device has experienced complete power loss and has not yet re-synchronized
 
-If no valid absolute timestamp is available, measurements and alarm events may still be buffered locally using a relative RTC-based time reference.
+Measurements and alarm events may still be buffered using the ESP32 system clock initialized to Unix timestamp 0.
 
-After a successful NTP synchronization, buffered measurements may be assigned absolute UTC timestamps using the elapsed RTC time between measurement acquisition and synchronization.
+Until the first successful NTP synchronization, the running system clock shall be interpreted as a relative time reference rather than an absolute UTC timestamp.
+
+After a successful NTP synchronization, buffered measurements may be assigned absolute UTC timestamps using the elapsed time reference between measurement acquisition and synchronization.
 
 The reconstructed timestamp shall be calculated as:
 
 ```text
-timestamp = ntp_time_at_sync - (rtc_time_at_sync - rtc_time_at_measurement)
+timestamp = ntp_time_at_sync - (relative_time_at_sync - relative_time_at_measurement)
 ```
 
 Only measurements with valid absolute timestamps shall be transmitted to external systems.
@@ -141,15 +147,29 @@ The implementation shall use standard ESP32 time functions:
 ```cpp
 time(nullptr);
 gettimeofday();
+settimeofday();
 ```
+
+Before the first successful NTP synchronization, the Time Manager shall initialize the ESP32 system clock to Unix timestamp `0` using `settimeofday()`.
+
+The running system clock shall then serve as a relative time reference until an absolute UTC time becomes available through a successful NTP synchronization.
 
 The Time Manager shall store:
 
 ```cpp
 lastNtpSyncTimestamp
+relativeTimeAtLastSync
 ```
 
-and determine whether re-synchronization is required using:
+The re-synchronization interval shall be configurable.
+
+The Time Manager shall determine whether re-synchronization is required using:
+
+```cpp
+(time(nullptr) - lastNtpSyncTimestamp) >= ntpSyncInterval
+```
+
+A dedicated Time Manager module shall be responsible for:
 
 ```cpp
 (time(nullptr) - lastNtpSyncTimestamp) >= ntpSyncInterval
