@@ -1,82 +1,71 @@
 #include <Arduino.h>
-#include <time.h>
-#include <sys/time.h>
-#include "esp_sleep.h"
+#include <WiFi.h>
+#include "time_manager.h"
+#include "secrets.h"
 
-RTC_DATA_ATTR uint32_t lastNtpSyncTimestamp = 0;
-RTC_DATA_ATTR uint32_t wakeupCounter = 0;
+uint32_t savedTimestamps[] ={0,20,40};
 
-constexpr uint64_t SLEEP_TIME_S = 10;
-constexpr uint32_t TEST_TIMESTAMP = 1700000000UL;
-
-void printWakeupReason()
+void connectWifi()
 {
-    esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
+    Serial.print("Connecting to WiFi");
+    
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-    switch (wakeupReason)
+    while (WiFi.status() != WL_CONNECTED)
     {
-        case ESP_SLEEP_WAKEUP_TIMER:
-            Serial.println("Wakeup Reason        : TIMER");
-            break;
-
-        default:
-            Serial.printf("Wakeup Reason        : %d\n", wakeupReason);
-            break;
+        Serial.print(".");
+        delay(500);
     }
-}
 
-void setTestSystemTime(uint32_t timestamp)
-{
-    timeval tv;
-    tv.tv_sec = timestamp;
-    tv.tv_usec = 0;
-
-    settimeofday(&tv, nullptr);
+    Serial.println();
+    Serial.println("WiFi connected");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
 }
 
 void setup()
 {
     Serial.begin(115200);
+    // Wait for user to connect to terminal after wakeup
     delay(10000);
-
-    wakeupCounter++;
-
-    Serial.println();
-    Serial.println("================================");
-    Serial.println("ESP32 RTC Time Test");
-    Serial.println("================================");
-
-    Serial.printf("Wakeup Counter       : %lu\n", wakeupCounter);
-    printWakeupReason();
-
-    if (lastNtpSyncTimestamp == 0)
-    {
-        Serial.println("First start detected");
-        Serial.println("Setting test system time...");
-
-        setTestSystemTime(TEST_TIMESTAMP);
-        lastNtpSyncTimestamp = TEST_TIMESTAMP;
-    }
-
-        Serial.printf("Last NTP Sync        : %lu\n", lastNtpSyncTimestamp);
-    Serial.printf("Current Timestamp    : %lld\n", static_cast<long long>(now));
-    Serial.printf("Elapsed Since Sync   : %lld s\n",
-                  static_cast<long long>(now) - lastNtpSyncTimestamp);
-
-    time_t now = time(nullptr);
-    
-    Serial.println();
-    Serial.printf("Going to Deep Sleep for %llu seconds...\n", SLEEP_TIME_S);
-
-    delay(2000);
-
-    esp_sleep_enable_timer_wakeup(SLEEP_TIME_S * 1000000ULL);
-    esp_deep_sleep_start();
-
+    // initialize time Manager
+    initTimeManager();
 }
 
 void loop()
 {
+    if(getCurrentTimestamp() >0)
+    {
+        connectWifi();
+        if(isTimeSyncRequired())
+        {     
+           if(forceTimeSync())
+           {
+                 Serial.println("System time update: DONE");
+                 for(int i=0; i < sizeof(savedTimestamps) / sizeof(savedTimestamps[0]); i++)
+                 {
+                    Serial.print(savedTimestamps[i]);
+                    Serial.print(" updated to: ");
+                    Serial.println(reconstructTimestamp(savedTimestamps[i]));
+                 }
+           }else{
+                Serial.println("System time update: FAILED");
+           }
+        }else{
+            Serial.println("System time update: NOT REQUIRED");
+        }
+    }
+    // Print timestamp and timeAvailable
+    Serial.print("Timestamp: ");
+    Serial.print(getCurrentTimestamp());
+    Serial.print(" | Time valid: ");
+    Serial.println(isTimeValid() ? "YES" : "NO");
+    Serial.flush();
+    // Wait for serial data to be transmitted
+    delay(5000);
+    // Enter deep sleep
+    esp_sleep_enable_timer_wakeup((uint64_t)5UL * 1000000ULL); 
+    esp_deep_sleep_start();
 
-    
 }
