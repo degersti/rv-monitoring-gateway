@@ -1,0 +1,2 @@
+void setupDevMeasurementBuffer();
+void loopDevMeasurementBuffer();
