@@ -26,6 +26,10 @@
     #include "test/DEV-008-measurement-buffer.h"
 #endif
 
+#ifdef DEV_009_RUNTIME_WATCHDOG
+    #include "test/DEV-009-runtime-watchdog.h"
+#endif
+
 void setup()
 {
     #ifdef DEV_001_SENSOR_MANAGER
@@ -45,6 +49,9 @@ void setup()
     #endif
     #ifdef DEV_008_MEASUREMENT_BUFFER
         setupDevMeasurementBuffer();
+    #endif
+        #ifdef DEV_009_RUNTIME_WATCHDOG
+        setupDevRuntimeWatchdog();
     #endif
 }
 void loop()
@@ -66,5 +73,8 @@ void loop()
     #endif
     #ifdef DEV_008_MEASUREMENT_BUFFER
         loopDevMeasurementBuffer();
+    #endif
+    #ifdef DEV_009_RUNTIME_WATCHDOG
+        loopDevRuntimeWatchdog();
     #endif
 }

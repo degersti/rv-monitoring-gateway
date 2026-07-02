@@ -45,7 +45,7 @@ constexpr uint8_t PIN_RGB_LED = 48;
 constexpr uint32_t SERIAL_MONITOR_WAIT_MS = 10000;
 constexpr uint32_t CYCLE_INTERVAL_SEC     = 15;
 constexpr uint32_t TELEMETRY_INTERVAL_MS  = 10000;
-
+constexpr uint32_t WATCHDOG_TIMEOUT_SECONDS = 30;
 
 // ==================================================
 // WiFi configuration

@@ -14,7 +14,10 @@
 #include "config.h"
 #include <Arduino.h>   
 #include <Preferences.h>
+#include "esp_task_wdt.h"
+#include "esp_idf_version.h"
 #include "app/debug_logger.h"
+
 
 // RTC initialization marker and current boot epoch
 RTC_DATA_ATTR static uint32_t rtcMagic = 0;
@@ -32,7 +35,7 @@ static Preferences preferences;
  * Returns:     Stored boot epoch ID.
  * Notes:       Returns 0 if no value is stored.
  *************************************************/
-static uint32_t readBootEpochIdFromFlash()
+static uint32_t readBootEpochIdFromFlash(void)
 {
     preferences.begin("runtime", true);
 
@@ -60,6 +63,47 @@ static void writeBootEpochIdToFlash(uint32_t bootEpochId)
     preferences.end();
 }
 /*************************************************
+ * Function:    initWatchdog
+ * Description: Initializes the ESP32 hardware
+ *              watchdog and registers the current
+ *              task for supervision.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Must be called once during 
+ *              application initialization.   
+ *************************************************/
+static void initWatchdog(void)
+{
+#if ESP_IDF_VERSION_MAJOR >= 5
+    esp_task_wdt_config_t watchdogConfig =
+    {
+        .timeout_ms = WATCHDOG_TIMEOUT_SECONDS * 1000,
+        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+        .trigger_panic = true
+    };
+
+    esp_err_t result = esp_task_wdt_init(&watchdogConfig);
+#else
+    esp_err_t result = esp_task_wdt_init(WATCHDOG_TIMEOUT_SECONDS, true);
+#endif
+
+    if (result != ESP_OK && result != ESP_ERR_INVALID_STATE)
+    {
+        LOG_ERROR("Failed to initialize watchdog (%d)", result);
+        return;
+    }
+
+    result = esp_task_wdt_add(NULL);
+
+    if (result != ESP_OK && result != ESP_ERR_INVALID_STATE)
+    {
+        LOG_ERROR("Failed to register watchdog task (%d)", result);
+        return;
+    }
+
+    LOG_INFO("Runtime watchdog initialized.");
+}
+/*************************************************
  * Function:    initRuntimeManager (added 30.06.26) 
  * Description: Initializes the runtime context.
  * Parameters:  None
@@ -79,6 +123,7 @@ void initRuntimeManager(void)
 
         writeBootEpochIdToFlash(bootEpochId);
     }
+    initWatchdog();
 }
 /*************************************************
  * Function:    getBootEpochId
@@ -90,6 +135,25 @@ void initRuntimeManager(void)
 uint32_t getBootEpochId(void)
 {
     return bootEpochId;
+}
+/*************************************************
+ * Function:    feedRuntimeWatchdog
+ * Description: Resets the watchdog timer after a
+ *              successful application cycle to
+ *              prevent an unintended system reset.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Must be called at the end of each
+ *              successful application cycle.
+ *************************************************/
+void feedRuntimeWatchdog(void)
+{
+    esp_err_t result = esp_task_wdt_reset();
+
+    if (result != ESP_OK)
+    {
+        LOG_ERROR("Failed to feed watchdog (%d)", result);
+    }
 }
 /*************************************************
  * Function:    isAlarmActive
@@ -141,7 +205,7 @@ void enterDeepSleep(void)
  *              provide context for the current
  *              boot cycle.
  *************************************************/
-void printWakeupReason()
+void printWakeupReason(void)
 {
     esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
 

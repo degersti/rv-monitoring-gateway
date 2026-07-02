@@ -39,7 +39,13 @@ static bool mqttInitialized = false;
 /*************************************************
  * Function:    initMqtt
  * Description: Initializes the MQTT client and
- *              configures the broker connection.
+ *              configures the broker settings.
+ * Parameters:  client - Network client used for
+ *                       secure MQTT communication.
+ * Returns:     None
+ * Notes:       Does not establish a connection.
+ *              The connection is handled by the
+ *              MQTT state machine.
  *************************************************/
 void initMqtt(Client& client)
 {
@@ -145,6 +151,10 @@ MqttConnectionState processMqttConnection(void)
  * Function:    resetMqttConnection
  * Description: Disconnects MQTT and resets the
  *              reconnect state.
+ * Parameters:  None
+ * Returns:     None    
+ * Notes:       The next call to processMqttConnection
+ *              will attempt to reconnect.
  *************************************************/
 void resetMqttConnection(void)
 {
@@ -160,6 +170,11 @@ void resetMqttConnection(void)
 /*************************************************
  * Function:    mqttConnect
  * Description: Compatibility wrapper for older code.
+ * Parameters:  None
+ * Returns:     true  - MQTT connected
+ *              false - MQTT not connected yet or failed
+ * Notes:       Starts or continues a non-blocking
+ *              connection attempt.
  *************************************************/
 bool mqttConnect(void)
 {
@@ -170,6 +185,11 @@ bool mqttConnect(void)
  * Function:    mqttLoop
  * Description: Processes MQTT client background
  *              tasks and maintains the connection.
+ * Parameters:  None
+ * Returns:     None    
+ * Notes:       Should be called frequently in the main
+ *              loop to ensure timely handling of
+ *              MQTT messages.
  *************************************************/
 void mqttLoop(void)
 {
@@ -183,6 +203,10 @@ void mqttLoop(void)
  * Function:    getMqttConnectionStatus
  * Description: Returns the current MQTT connection
  *              state.
+ * Parameters:  None
+ * Returns:     true  - MQTT connected 
+ *              false - MQTT not connected
+ * Notes:       None
  *************************************************/
 bool getMqttConnectionStatus(void)
 {
@@ -193,6 +217,10 @@ bool getMqttConnectionStatus(void)
  * Function:    mqttPublish
  * Description: Publishes telemetry data to the
  *              configured MQTT topic.
+ * Parameters:  payload - JSON-formatted telemetry data
+ * Returns:     true  - Message published successfully
+ *              false - Message failed to publish
+ * Notes:       None
  *************************************************/
 bool mqttPublish(const char* payload)
 {

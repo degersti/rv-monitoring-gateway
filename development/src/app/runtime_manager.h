@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 void initRuntimeManager(void);
+void feedRuntimeWatchdog(void);
 uint32_t getBootEpochId(void);
 bool isAlarmActive(void);
 void prepareDeepSleep(void);
