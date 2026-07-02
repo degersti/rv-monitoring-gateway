@@ -26,6 +26,8 @@ RTC_DATA_ATTR static uint32_t bootEpochId = 0;
 constexpr uint32_t RTC_MAGIC = 0x52564D47;   // "RVMG"
 // Non-volatile storage instance.
 static Preferences preferences;
+// Unique identification of the ESP32 device.
+static char deviceId[13];
 
 /*************************************************
  * Function:    readBootEpochIdFromFlash
@@ -62,6 +64,30 @@ static void writeBootEpochIdToFlash(uint32_t bootEpochId)
 
     preferences.end();
 }
+/*************************************************
+ * Function:    loadDeviceId
+ * Description: Reads the unique ESP32 hardware ID
+ *              from eFuse and stores it as the
+ *              runtime device identifier.
+ * Parameters:  None
+ * Returns:     None    
+ * Notes:       The device ID is a 12-character
+ *              hexadecimal string derived from the
+ *              ESP32 MAC address.
+ *************************************************/
+static void loadDeviceId()
+{
+    uint64_t mac = ESP.getEfuseMac();
+
+    snprintf(deviceId,
+             sizeof(deviceId),
+             "%04X%08X",
+             (uint16_t)(mac >> 32),
+             (uint32_t)mac);
+
+    LOG_INFO("Device ID: %s", deviceId);
+}
+
 /*************************************************
  * Function:    initWatchdog
  * Description: Initializes the ESP32 hardware
@@ -123,6 +149,7 @@ void initRuntimeManager(void)
 
         writeBootEpochIdToFlash(bootEpochId);
     }
+    loadDeviceId();
     initWatchdog();
 }
 /*************************************************
@@ -145,6 +172,21 @@ uint32_t getBootEpochId(void)
  * Returns:     None
  * Notes:       Must be called at the end of each
  *              successful application cycle.
+ *************************************************/
+const char* getDeviceId()
+{
+    return deviceId;
+}
+/*************************************************
+ * Function:    getDeviceId
+ * Description: Returns the unique device
+ *              identifier of the gateway.
+ * Parameters:  None
+ * Returns:     Pointer to a null-terminated string
+ *              containing the device ID.
+ * Notes:       The device ID is derived from the
+ *              ESP32 MAC address and is unique to
+ *              each device.
  *************************************************/
 void feedRuntimeWatchdog(void)
 {

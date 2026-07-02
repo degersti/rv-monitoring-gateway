@@ -30,7 +30,6 @@ const char* mqtt_server = MQTT_SERVER;
 const int mqtt_port = MQTT_PORT;
 const char* mqtt_user = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
-const String deviceId = DEVICE_ID;
 
 static MqttConnectionState mqttState = MqttConnectionState::IDLE;
 static uint32_t lastReconnectAttempt = 0;
@@ -68,36 +67,44 @@ void initMqtt(Client& client)
  *              connection and updates the
  *              internal MQTT connection state.
  *************************************************/
-static bool tryMqttConnect(void)
+static bool tryMqttConnect(const char* deviceId)
 {
     LOG_INFO("Connecting to HiveMQ");
 
-    String clientId = deviceId + "-" + String(random(0xffff), HEX);
+    char clientId[32];
 
-    if (mqttClient.connect(
-            clientId.c_str(),
-            mqtt_user,
-            mqtt_password))
+    snprintf(clientId,
+             sizeof(clientId),
+             "%s-%04X",
+             deviceId,
+             random(0x10000));
+
+    if (mqttClient.connect(clientId, mqtt_user, mqtt_password))
     {
-        Serial.println();
-        Serial.println("HiveMQ connected");
+        LOG_INFO("HiveMQ connected");
 
-        String topic = deviceId + "/status";
-        mqttClient.publish(topic.c_str(), "{\"status\":\"online\"}");
+        char topic[64];
 
-        Serial.println("Status message sent");
+        snprintf(topic,
+                 sizeof(topic),
+                 "gateway/%s/status",
+                 deviceId);
+
+        mqttClient.publish(topic, "{\"status\":\"online\"}");
+
+        LOG_INFO("Status message sent");
+
         mqttState = MqttConnectionState::CONNECTED;
         return true;
     }
 
-    Serial.print(" failed, state=");
-    Serial.println(mqttClient.state());
+    LOG_WARN("HiveMQ connection failed (state=%d)", mqttClient.state());
 
     mqttState = MqttConnectionState::FAILED;
     lastReconnectAttempt = millis();
+
     return false;
 }
-
 /*************************************************
  * Function:    processMqttConnection
  * Description: Handles MQTT connection attempts
@@ -108,7 +115,7 @@ static bool tryMqttConnect(void)
  *              synchronous, but this function avoids
  *              aggressive reconnect loops.
  *************************************************/
-MqttConnectionState processMqttConnection(void)
+MqttConnectionState processMqttConnection(const char* deviceId)
 {
     const uint32_t now = millis();
 
@@ -142,7 +149,7 @@ MqttConnectionState processMqttConnection(void)
     }
 
     mqttState = MqttConnectionState::CONNECTING;
-    tryMqttConnect();
+    tryMqttConnect(deviceId);
 
     return mqttState;
 }
@@ -176,9 +183,9 @@ void resetMqttConnection(void)
  * Notes:       Starts or continues a non-blocking
  *              connection attempt.
  *************************************************/
-bool mqttConnect(void)
+bool mqttConnect(const char* deviceId)
 {
-    return processMqttConnection() == MqttConnectionState::CONNECTED;
+    return processMqttConnection(deviceId) == MqttConnectionState::CONNECTED;
 }
 
 /*************************************************
@@ -217,12 +224,13 @@ bool getMqttConnectionStatus(void)
  * Function:    mqttPublish
  * Description: Publishes telemetry data to the
  *              configured MQTT topic.
- * Parameters:  payload - JSON-formatted telemetry data
+ * Parameters:  deviceId - Unique device identifier
+ *              payload - JSON-formatted telemetry data
  * Returns:     true  - Message published successfully
  *              false - Message failed to publish
  * Notes:       None
  *************************************************/
-bool mqttPublish(const char* payload)
+bool mqttPublish(const char* deviceId, const char* payload)
 {
     if (!mqttClient.connected())
     {
@@ -230,7 +238,7 @@ bool mqttPublish(const char* payload)
         return false;
     }
 
-    String topic = String(DEVICE_ID) + "/telemetry";
+    String topic = String("gateway/") + deviceId + "/measurement";
 
     bool result = mqttClient.publish(topic.c_str(), payload);
 

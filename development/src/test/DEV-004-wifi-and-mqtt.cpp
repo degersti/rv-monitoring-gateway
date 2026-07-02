@@ -3,6 +3,7 @@
 #include "app/wifi_manager.h"
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
+#include "app/runtime_manager.h"
 
 static uint32_t lastPublishTime = 0;
 static uint32_t publishCounter = 0;
@@ -18,6 +19,7 @@ void setupDevWifiAndMqtt()
     Serial.println("DEV-0054 WiFi and MQTT Test");
     Serial.println("--------------------------------");
 
+    initRuntimeManager();
     initWifi();
     initMqtt(getWifiClient());
 
@@ -33,7 +35,7 @@ void loopDevWifiAndMqtt()
         return;
     }
 
-    MqttConnectionState mqttState = processMqttConnection();
+    MqttConnectionState mqttState = processMqttConnection(getDeviceId());
 
     if (mqttState != MqttConnectionState::CONNECTED)
     {
@@ -69,5 +71,5 @@ void loopDevWifiAndMqtt()
     Serial.println("Publishing test telemetry:");
     Serial.println(payload);
 
-    mqttPublish(payload);
+    mqttPublish(getDeviceId(), payload);
 }
