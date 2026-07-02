@@ -18,14 +18,19 @@ The project is currently in an early development phase and follows an incrementa
 
 ### Phase 1 – Core Monitoring Prototype
 
-- Battery voltage monitoring
-- Temperature and humidity monitoring
-- Water ingress detection
-- Smoke alarm integration
-- Wi-Fi communication
-- Backend connectivity
-- Historical data storage
-- Event-based alarm handling
+- [x] Battery voltage monitoring
+- [x] Temperature and humidity monitoring
+- [x] Water ingress detection
+- [x] Smoke alarm integration
+- [x] Wi-Fi communication
+- [x] Backend connectivity (MQTT)
+- [x] Historical data storage
+- [x] Time management
+- [x] Deep Sleep support
+- [ ] System state machine
+- [ ] Watchdog
+- [ ] Firmware integration
+- [ ] Prototype validation
 
 ### Phase 2 – Enhanced Connectivity
 
@@ -33,6 +38,7 @@ The project is currently in an early development phase and follows an incrementa
 - User configurable alarm thresholds
 - Simplified device onboarding
 - Improved device management
+- OTA firmware updates
 
 ### Phase 3 – Extended Monitoring
 
@@ -42,20 +48,48 @@ The project is currently in an early development phase and follows an incrementa
 - Shore power monitoring
 - Additional environmental sensors
 
+---
+
 ## Current Status
 
-🚧 Early Development
+🚧 Prototype 1 Development
 
 ### Completed
 
 - Whitepaper created
 - GitHub repository established
 - ESP32 development environment configured
-- PlatformIO project setup completed
+- PlatformIO project setup
+- Modular firmware architecture
+- Logging module
+- Runtime manager
+- Time manager
+- Deep Sleep manager
+- Wi-Fi manager
+- MQTT manager
+- Persistent measurement buffer
+- Sensor drivers
+- Hardware abstraction completed
+- Multiple Architecture Decision Records (ADRs)
 
 ### In Progress
 
-- Voltage monitoring proof of concept
+- Firmware integration
+- Central state machine
+- Watchdog implementation
+
+### Next Milestone
+
+**Prototype 1 running unattended on real hardware**
+
+Features:
+
+- Periodic sensor measurements
+- MQTT data transmission
+- Automatic buffering during communication outages
+- Deep Sleep power optimization
+- Wake-up on alarm events
+- Automatic recovery after reset or power loss
 
 ## License
 
