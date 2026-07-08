@@ -11,9 +11,9 @@ enum class MqttConnectionState
 };
 
 void initMqtt(Client& client);
-MqttConnectionState processMqttConnection(void);
+MqttConnectionState processMqttConnection(const char* deviceId);
 void resetMqttConnection(void);
-bool mqttConnect(void);
+bool mqttConnect(const char* deviceId);
 bool getMqttConnectionStatus(void);
-bool mqttPublish(const char* payload);
+bool mqttPublish(const char* deviceId, const char* payload);
 void mqttLoop();

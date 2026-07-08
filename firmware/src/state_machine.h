@@ -12,4 +12,5 @@ enum class ProgramState {
     ERROR
 };
 
+void initStateMachine();
 void runStateMachine();

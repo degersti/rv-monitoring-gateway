@@ -5,14 +5,13 @@
 enum class IndicatorState
 {
     BOOT,
-    DEBUG_CONNECT,
     WIFI_CONNECTING,
     WIFI_CONNECTED,
     MQTT_CONNECTING,
-    MQTT_CONNECTED,
+    MQTT_ONLINE,
     ALARM_ACTIVE,
     ERROR_ACTIVE,
-    DEEP_SLEEP
+    OFF
 };
 
 void initStatusIndicator(void);

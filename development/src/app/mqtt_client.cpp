@@ -58,7 +58,8 @@ void initMqtt(Client& client)
  * Function:    tryMqttConnect
  * Description: Attempts to establish a connection
  *              to the MQTT broker.
- * Parameters:  None
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
  * Returns:     true  - Connection successful
  *              false - Connection failed
  * Notes:       Generates a unique client ID,
@@ -109,7 +110,8 @@ static bool tryMqttConnect(const char* deviceId)
  * Function:    processMqttConnection
  * Description: Handles MQTT connection attempts
  *              with retry timing.
- * Parameters:  None
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
  * Returns:     Current MQTT connection state
  * Notes:       PubSubClient connect itself is still
  *              synchronous, but this function avoids
@@ -177,7 +179,8 @@ void resetMqttConnection(void)
 /*************************************************
  * Function:    mqttConnect
  * Description: Compatibility wrapper for older code.
- * Parameters:  None
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
  * Returns:     true  - MQTT connected
  *              false - MQTT not connected yet or failed
  * Notes:       Starts or continues a non-blocking

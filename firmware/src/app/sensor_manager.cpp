@@ -16,10 +16,10 @@
  *************************************************/
 
 #include <Arduino.h>
-#include "sensor_manager.h"
 #include "Wire.h"
 #include "config.h"
 #include "Adafruit_SHT31.h"
+#include "app/sensor_manager.h"
 
 // Initialize the SHT31 sensor object
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
@@ -34,30 +34,21 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();
  * Notes:       Configures ADC, I2C, SHT31 and
  *              alarm inputs.
  *************************************************/
-bool initHardware(void)
+bool initSensorManager(void)
 {
     // Configure ADC resolution
     analogReadResolution(ADC_RESOLUTION);
 
     analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
     analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
-
-    pinMode(PIN_HOUSE_ADC, INPUT);
-    pinMode(PIN_ENGINE_ADC, INPUT);
-    
+   
     // Initialize I2C interface
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
     if (!sht31.begin(SHT31_ADDR)) { 
         Serial.println("Sensor nicht gefunden!");
         return false;                               
     }
-    Serial.println("Sensor gefunden!");
-    
-    // Initialize alarm inputs
-    pinMode(PIN_WATER_ALARM, INPUT_PULLUP);
-    pinMode(PIN_SMOKE_ALARM, INPUT_PULLUP);
-    Serial.println("Inputs initialisiert!");
-
+    Serial.println("Sensor gefunden!");    
     return true;
 }
 /*************************************************

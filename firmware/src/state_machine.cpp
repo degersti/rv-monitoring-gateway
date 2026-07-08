@@ -19,11 +19,14 @@
 #include <Arduino.h>
 #include "config.h"
 #include "state_machine.h"
-#include "sensor_manager.h"
-#include "wifi_manager.h"
-#include "mqtt_client.h"
-#include "data_manager.h"
-#include "status_indicator.h"
+#include "app/runtime_manager.h"
+#include "app/debug_logger.h"
+#include "app/sensor_manager.h"
+#include "app/data_manager.h"
+#include "app/wifi_manager.h"
+#include "app/mqtt_client.h"
+#include "app/data_manager.h"
+#include "app/status_indicator.h"
 
 // Timestamp of last telemetry transmission
 static unsigned long lastTelemetry = 0;
@@ -41,14 +44,53 @@ static SensorData data = {
     .smokeAlarm = false
 };
 
-// Application starts in BOOT state after power-up
-static ProgramState state = ProgramState::BOOT;
+// Current program state
+ProgramState state; 
+// Timestamp of current state entry
+uint32_t stateStartTime;
 
-static bool isAlarmActive(void)
+/*************************************************
+ * Function:    initStateMachine
+ * Description: Initializes the program state
+ *              machine and enters the BOOT state.
+ * Parameters:  None
+ * Returns:     None (void function)
+ * Notes:       Must be called once during system
+ *              startup.
+ *************************************************/
+void initStateMachine()
 {
-    return data.waterAlarm || data.smokeAlarm;
+    state = ProgramState::BOOT;
+    stateStartTime = millis();
 }
-
+/*************************************************
+ * Function:    setState
+ * Description: Changes the current program state
+ *              and updates the state entry
+ *              timestamp if the state changed.
+ * Parameters:  newState - New program state
+ * Returns:     None (void function)
+ * Notes:       Should be called to transition between
+ *              program states.
+ *************************************************/
+void setState(ProgramState newState)
+{
+    if (state != newState)
+    {
+        state = newState;
+        stateStartTime = millis();
+    }
+}
+/*************************************************
+ * Function:    runStateMachine
+ * Description: Executes the current program state
+ *              and performs state transitions.
+ * Parameters:  None
+ * Returns:     None (void function)
+ * Notes:       Must be called cyclically from the
+ *              main application loop to ensure 
+ *              proper state machine operation.
+ *************************************************/
 void runStateMachine()
 {
     switch (state)
@@ -58,9 +100,17 @@ void runStateMachine()
          * Entry state after reset or power-up.
          *****************************************************/
         case ProgramState::BOOT:
-            Serial.println("BOOT");
             setIndicatorState(IndicatorState::BOOT);
-            state = ProgramState::INIT_HARDWARE;
+            if(isDebugModeEnabled() && !isSerialInitialized())
+            {                 
+                initSerialDebugDelayed(stateStartTime);  
+                break;   
+            } 
+            if (isDebugModeEnabled())
+            {
+                printWakeupReason();
+            }
+            setState(ProgramState::INIT_HARDWARE);
             break;
 
         /*****************************************************
@@ -70,8 +120,7 @@ void runStateMachine()
         case ProgramState::INIT_HARDWARE:
             initWifi();
             initMqtt(getWifiClient());
-
-            if (initHardware())
+            if (initSensorManager())
             {
                 state = ProgramState::CONNECT_WIFI;
             }
@@ -119,11 +168,11 @@ void runStateMachine()
                 break;
             }
 
-            MqttConnectionState mqttState = processMqttConnection();
+            MqttConnectionState mqttState = processMqttConnection(getDeviceId());
 
             if (mqttState == MqttConnectionState::CONNECTED)
             {
-                setIndicatorState(IndicatorState::MQTT_CONNECTED);
+                setIndicatorState(IndicatorState::MQTT_ONLINE);
                 state = ProgramState::READ_SENSORS;
             }
             else if (mqttState == MqttConnectionState::FAILED)
@@ -176,11 +225,11 @@ void runStateMachine()
             mqttLoop();
             getTelemetry(payload, data);
 
-            if (mqttPublish(payload))
+            if (mqttPublish(getDeviceId(), payload))
             {
                 if (!isAlarmActive())
                 {
-                    setIndicatorState(IndicatorState::MQTT_CONNECTED);
+                    setIndicatorState(IndicatorState::MQTT_ONLINE);
                 }
 
                 lastTelemetry = millis();
@@ -226,7 +275,7 @@ void runStateMachine()
 
             if (!isAlarmActive())
             {
-                setIndicatorState(IndicatorState::MQTT_CONNECTED);
+                setIndicatorState(IndicatorState::MQTT_ONLINE);
             }
 
             if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS)

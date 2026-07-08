@@ -13,14 +13,14 @@
  * - Telemetry publishing
  *
  *************************************************/
-
 #include <Arduino.h>
-#include "mqtt_client.h"
-#include "status_indicator.h"
-#include "wifi_manager.h"
+#include <PubSubClient.h>
 #include "config.h"
 #include "secrets.h"
-#include <PubSubClient.h>
+#include "app/mqtt_client.h"
+#include "app/wifi_manager.h"
+#include "app/debug_logger.h"
+
 
 // MQTT client instance
 static PubSubClient mqttClient;
@@ -30,7 +30,6 @@ const char* mqtt_server = MQTT_SERVER;
 const int mqtt_port = MQTT_PORT;
 const char* mqtt_user = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
-const String deviceId = DEVICE_ID;
 
 static MqttConnectionState mqttState = MqttConnectionState::IDLE;
 static uint32_t lastReconnectAttempt = 0;
@@ -39,7 +38,13 @@ static bool mqttInitialized = false;
 /*************************************************
  * Function:    initMqtt
  * Description: Initializes the MQTT client and
- *              configures the broker connection.
+ *              configures the broker settings.
+ * Parameters:  client - Network client used for
+ *                       secure MQTT communication.
+ * Returns:     None
+ * Notes:       Does not establish a connection.
+ *              The connection is handled by the
+ *              MQTT state machine.
  *************************************************/
 void initMqtt(Client& client)
 {
@@ -53,7 +58,8 @@ void initMqtt(Client& client)
  * Function:    tryMqttConnect
  * Description: Attempts to establish a connection
  *              to the MQTT broker.
- * Parameters:  None
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
  * Returns:     true  - Connection successful
  *              false - Connection failed
  * Notes:       Generates a unique client ID,
@@ -62,47 +68,56 @@ void initMqtt(Client& client)
  *              connection and updates the
  *              internal MQTT connection state.
  *************************************************/
-static bool tryMqttConnect(void)
+static bool tryMqttConnect(const char* deviceId)
 {
-    Serial.print("Connecting to HiveMQ");
+    LOG_INFO("Connecting to HiveMQ");
 
-    String clientId = deviceId + "-" + String(random(0xffff), HEX);
+    char clientId[32];
 
-    if (mqttClient.connect(
-            clientId.c_str(),
-            mqtt_user,
-            mqtt_password))
+    snprintf(clientId,
+             sizeof(clientId),
+             "%s-%04X",
+             deviceId,
+             random(0x10000));
+
+    if (mqttClient.connect(clientId, mqtt_user, mqtt_password))
     {
-        Serial.println();
-        Serial.println("HiveMQ connected");
+        LOG_INFO("HiveMQ connected");
 
-        String topic = deviceId + "/status";
-        mqttClient.publish(topic.c_str(), "{\"status\":\"online\"}");
+        char topic[64];
 
-        Serial.println("Status message sent");
+        snprintf(topic,
+                 sizeof(topic),
+                 "gateway/%s/status",
+                 deviceId);
+
+        mqttClient.publish(topic, "{\"status\":\"online\"}");
+
+        LOG_INFO("Status message sent");
+
         mqttState = MqttConnectionState::CONNECTED;
         return true;
     }
 
-    Serial.print(" failed, state=");
-    Serial.println(mqttClient.state());
+    LOG_WARN("HiveMQ connection failed (state=%d)", mqttClient.state());
 
     mqttState = MqttConnectionState::FAILED;
     lastReconnectAttempt = millis();
+
     return false;
 }
-
 /*************************************************
  * Function:    processMqttConnection
  * Description: Handles MQTT connection attempts
  *              with retry timing.
- * Parameters:  None
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
  * Returns:     Current MQTT connection state
  * Notes:       PubSubClient connect itself is still
  *              synchronous, but this function avoids
  *              aggressive reconnect loops.
  *************************************************/
-MqttConnectionState processMqttConnection(void)
+MqttConnectionState processMqttConnection(const char* deviceId)
 {
     const uint32_t now = millis();
 
@@ -136,7 +151,7 @@ MqttConnectionState processMqttConnection(void)
     }
 
     mqttState = MqttConnectionState::CONNECTING;
-    tryMqttConnect();
+    tryMqttConnect(deviceId);
 
     return mqttState;
 }
@@ -145,6 +160,10 @@ MqttConnectionState processMqttConnection(void)
  * Function:    resetMqttConnection
  * Description: Disconnects MQTT and resets the
  *              reconnect state.
+ * Parameters:  None
+ * Returns:     None    
+ * Notes:       The next call to processMqttConnection
+ *              will attempt to reconnect.
  *************************************************/
 void resetMqttConnection(void)
 {
@@ -160,16 +179,27 @@ void resetMqttConnection(void)
 /*************************************************
  * Function:    mqttConnect
  * Description: Compatibility wrapper for older code.
+ * Parameters:  deviceId - Unique MQTT client ID
+ *                         used during connection.
+ * Returns:     true  - MQTT connected
+ *              false - MQTT not connected yet or failed
+ * Notes:       Starts or continues a non-blocking
+ *              connection attempt.
  *************************************************/
-bool mqttConnect(void)
+bool mqttConnect(const char* deviceId)
 {
-    return processMqttConnection() == MqttConnectionState::CONNECTED;
+    return processMqttConnection(deviceId) == MqttConnectionState::CONNECTED;
 }
 
 /*************************************************
  * Function:    mqttLoop
  * Description: Processes MQTT client background
  *              tasks and maintains the connection.
+ * Parameters:  None
+ * Returns:     None    
+ * Notes:       Should be called frequently in the main
+ *              loop to ensure timely handling of
+ *              MQTT messages.
  *************************************************/
 void mqttLoop(void)
 {
@@ -183,6 +213,10 @@ void mqttLoop(void)
  * Function:    getMqttConnectionStatus
  * Description: Returns the current MQTT connection
  *              state.
+ * Parameters:  None
+ * Returns:     true  - MQTT connected 
+ *              false - MQTT not connected
+ * Notes:       None
  *************************************************/
 bool getMqttConnectionStatus(void)
 {
@@ -193,28 +227,32 @@ bool getMqttConnectionStatus(void)
  * Function:    mqttPublish
  * Description: Publishes telemetry data to the
  *              configured MQTT topic.
+ * Parameters:  deviceId - Unique device identifier
+ *              payload - JSON-formatted telemetry data
+ * Returns:     true  - Message published successfully
+ *              false - Message failed to publish
+ * Notes:       None
  *************************************************/
-bool mqttPublish(const char* payload)
+bool mqttPublish(const char* deviceId, const char* payload)
 {
     if (!mqttClient.connected())
     {
-        Serial.println("Payload message failed: MQTT disconnected");
+        LOG_WARN("Payload message failed: MQTT disconnected");
         return false;
     }
 
-    String topic = String(DEVICE_ID) + "/telemetry";
+    String topic = String("gateway/") + deviceId + "/measurement";
 
     bool result = mqttClient.publish(topic.c_str(), payload);
 
     if (result)
     {
-        triggerTelemetryFlash();
-        Serial.println("Payload message sent");
-        Serial.println(payload);
+        LOG_INFO("Payload message sent");
+        LOG_DEBUG("%s", payload);
     }
     else
     {
-        Serial.println("Payload message failed");
+        LOG_WARN("Payload message failed");
     }
 
     return result;

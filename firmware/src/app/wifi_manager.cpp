@@ -20,6 +20,7 @@
 #include "wifi_manager.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include "app/debug_logger.h"
 
 // WiFi network credentials
 const char* wifi_ssid = WIFI_SSID;
@@ -79,10 +80,8 @@ WiFiConnectionState processWifiConnection(void)
     {
         if (wifiState != WiFiConnectionState::CONNECTED)
         {
-            Serial.println();
-            Serial.println("WiFi connected");
-            Serial.print("IP Address: ");
-            Serial.println(WiFi.localIP());
+            LOG_INFO("WiFi connected");
+            LOG_DEBUG("IP Address: %s", WiFi.localIP().toString().c_str());
         }
 
         wifiState = WiFiConnectionState::CONNECTED;
@@ -115,14 +114,14 @@ WiFiConnectionState processWifiConnection(void)
     {
         if (now - lastStatusPrintTime >= WIFI_STATUS_PRINT_INTERVAL_MS)
         {
-            Serial.print(".");
+            LOG_PROGRESS(".");
             lastStatusPrintTime = now;
         }
 
         if (now - connectStartTime >= WIFI_CONNECT_TIMEOUT_MS)
         {
-            Serial.println();
-            Serial.println("WiFi connection timeout");
+            LOG_PROGRESS("\n");
+            LOG_WARN("WiFi connection timeout");
 
             WiFi.disconnect(true);
             lastRetryTime = now;
@@ -137,6 +136,10 @@ WiFiConnectionState processWifiConnection(void)
  * Function:    resetWifiConnection
  * Description: Resets WiFi connection handling so
  *              the next process call starts again.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Disconnects WiFi and clears the
+ *              connection state.
  *************************************************/
 void resetWifiConnection(void)
 {
@@ -149,11 +152,14 @@ void resetWifiConnection(void)
 
 /*************************************************
  * Function:    connectWifi
- * Description: Compatibility wrapper for older code.
- *              Starts or continues a non-blocking
- *              connection attempt.
+ * Description: Compatibility wrapper for older 
+ *              code. Starts or continues a 
+ *              non-blocking connection attempt.
  * Returns:     true  - WiFi connected
- *              false - WiFi not connected yet or failed
+ *              false - WiFi not connected yet 
+ *              or failed
+ * Notes:       Should be called repeatedly while 
+ *              the application is trying to connect.
  *************************************************/
 bool connectWifi(void)
 {
@@ -164,6 +170,11 @@ bool connectWifi(void)
  * Function:    getWiFiConnectionStatus
  * Description: Returns the current WiFi connection
  *              state.
+ * Parameters:  None
+ * Returns:     true  - WiFi connected
+ *              false - WiFi not connected yet 
+ *              or failed
+ * Notes:       None
  *************************************************/
 bool getWiFiConnectionStatus(void)
 {
@@ -174,6 +185,11 @@ bool getWiFiConnectionStatus(void)
  * Function:    getWifiClient
  * Description: Provides access to the secure WiFi
  *              client used for MQTT communication.
+ * Parameters:  None
+ * Returns:     Reference to the secure WiFi client
+ * Notes:       The client is configured to accept
+ *              any server certificate without 
+ *              validation.
  *************************************************/
 Client& getWifiClient(void)
 {
