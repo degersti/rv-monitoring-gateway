@@ -132,24 +132,25 @@ float applyCalibration(float voltage, float gain, float offset)
  * Notes:       Invalid readings are reported as
  *              error values.
  *************************************************/
-void readEnvironmentalValues(SensorData& data)
+bool readEnvironmentalValues(SensorData& data)
 {
     // Read temperature and humidity from SHT31 sensor
     float temperature = sht31.readTemperature();
     float humidity = sht31.readHumidity();
 
     // Check if the readings are valid
-     if (isnan(temperature) || isnan(humidity))
+    if (isnan(temperature) || isnan(humidity))
     {
         LOG_ERROR("SHT31 read failed");
         data.temperature = -999.0f;
         data.humidity = -999.0f;
-        return;
+        return false;
     }
 
     // Store the readings in the SensorData struct
     data.temperature = temperature;
     data.humidity = humidity;    
+    return true;
 }
 /*************************************************
  * Function:    readAlarms

@@ -3,7 +3,7 @@
 #include "app/data_manager.h"
 
 bool initSensorManager(void);
-void readEnvironmentalValues(SensorData& data);
-void readBatteryVoltages(SensorData& data);
-void readAlarmPins(SensorData& data);
+bool readEnvironmentalValues(SensorData& data);
+bool readBatteryVoltages(SensorData& data);
+bool readAlarmPins(SensorData& data);
 

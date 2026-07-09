@@ -16,6 +16,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "app/data_manager.h"
+#include "app/runtime_manager.h"
 #include "app/sensor_manager.h"
 
 
@@ -24,6 +25,7 @@ static char payload[TELEMETRY_PAYLOAD_SIZE];
 
 // Current sensor and alarm values
 static SensorData data = {
+    .bootEpochId = 0,
     .houseBatteryVoltage = -999.0f,
     .engineBatteryVoltage = -999.0f,
     .temperature = -999.0f,
@@ -72,9 +74,14 @@ char* getTelemetry(void)
  *              voltages, environmental sensor
  *              readings and alarm states.
  *************************************************/
-void updateData(void)
+bool updateData(void)
 {
+    bool success = true;
+
+    data.bootEpochId = getBootEpochId();
     readBatteryVoltages(data);
-    readEnvironmentalValues(data);
+    success &= readEnvironmentalValues(data);
     readAlarmPins(data);
+
+    return success;
 }

@@ -2,6 +2,8 @@
 
 struct SensorData
 {
+    uint32_t bootEpochId;
+    
     float houseBatteryVoltage;
     float engineBatteryVoltage;
 
@@ -13,4 +15,4 @@ struct SensorData
 };
 
 char* getTelemetry(void);
-void  updateData(void);
+bool  updateData(void);
