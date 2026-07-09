@@ -20,6 +20,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "esp_sntp.h"
+#include "app/debug_logger.h"
 /*************************************************
  * RTC-persistent time state
  *
@@ -116,6 +117,7 @@ void initTimeManager()
     // possible after hard reset / powerloss
     if (!timeAvailable && !relativeTimeInitialized)
     {
+        LOG_INFO("Initializing system time to zero");
         setSystemTime(0);
         relativeTimeInitialized = true;
     }

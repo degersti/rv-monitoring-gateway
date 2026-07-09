@@ -54,6 +54,7 @@ constexpr uint32_t WIFI_STATUS_PRINT_INTERVAL_MS  = 500;
 // ==================================================
 // MQTT configuration
 // ==================================================
+constexpr uint16_t MQTT_BUFFER_SIZE = 512;
 
 constexpr const char* MQTT_SERVER =
     "2f48189618fb478e8cf80b9d4f4825d1.s1.eu.hivemq.cloud";

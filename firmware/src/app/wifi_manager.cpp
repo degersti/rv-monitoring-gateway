@@ -58,6 +58,7 @@ static void startWifiConnection(void)
  *************************************************/
 void initWifi(void)
 {
+    LOG_INFO("Initializing WiFi");
     WiFi.mode(WIFI_STA);
     espClient.setInsecure();
     wifiState = WiFiConnectionState::IDLE;

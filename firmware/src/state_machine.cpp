@@ -23,6 +23,7 @@
 #include "app/debug_logger.h"
 #include "app/sensor_manager.h"
 #include "app/data_manager.h"
+#include "app/time_manager.h"
 #include "app/wifi_manager.h"
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
@@ -96,14 +97,15 @@ void runStateMachine()
             {
                 printWakeupReason();
             }
-            setState(ProgramState::INIT_HARDWARE);
+            setState(ProgramState::INIT_SYSTEM);
             break;
 
         /*****************************************************
-         * STATE: INIT_HARDWARE
-         * Initializes all hardware peripherals and sensors.
+         * STATE: INIT_SYSTEM
+         * Initializes all system modules and peripherals.
          *****************************************************/
-        case ProgramState::INIT_HARDWARE:
+        case ProgramState::INIT_SYSTEM:
+            initTimeManager();
             initWifi();
             initMqtt(getWifiClient());
             if (initSensorManager())

@@ -48,6 +48,8 @@ static bool mqttInitialized = false;
  *************************************************/
 void initMqtt(Client& client)
 {
+    LOG_INFO("Initializing MQTT client");
+    mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
     mqttClient.setClient(client);
     mqttClient.setServer(mqtt_server, mqtt_port);
     mqttState = MqttConnectionState::IDLE;

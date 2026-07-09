@@ -38,12 +38,13 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();
 bool initSensorManager(void)
 {
     // Configure ADC resolution
+    LOG_INFO("Initializing ADC");
     analogReadResolution(ADC_RESOLUTION);
-
     analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
     analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
    
     // Initialize I2C interface
+    LOG_INFO("Initializing I2C interface");
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
     if (!sht31.begin(SHT31_ADDR)) { 
         LOG_WARN("Sensor nicht gefunden!");
