@@ -55,8 +55,8 @@
 
 ## Open Questions
 
-- 
-- 
+- What if timesync has been once successfull but then for a long periode not?
+- What if data can be transmitted but timesync was not possible --> Abort!?
 - 
 
 ---
