@@ -16,7 +16,21 @@
 #include <Arduino.h>
 #include "config.h"
 #include "app/data_manager.h"
+#include "app/sensor_manager.h"
 
+
+// Temporary JSON payload buffer
+static char payload[TELEMETRY_PAYLOAD_SIZE];
+
+// Current sensor and alarm values
+static SensorData data = {
+    .houseBatteryVoltage = -999.0f,
+    .engineBatteryVoltage = -999.0f,
+    .temperature = -999.0f,
+    .humidity = -999.0f,
+    .waterAlarm = false,
+    .smokeAlarm = false
+};
 /*************************************************
  * Function:    getTelemetry
  * Description: Collects all sensor values and
@@ -30,7 +44,7 @@
  *              into a telemetry payload suitable
  *              for MQTT transmission.
  *************************************************/
-char* getTelemetry(char* payload, SensorData& data)
+char* getTelemetry(void)
 {
     // Format the data into a JSON string
     snprintf(
@@ -45,4 +59,22 @@ char* getTelemetry(char* payload, SensorData& data)
             data.smokeAlarm ? "true" : "false"
         );
     return payload;
+}
+/*************************************************
+ * Function:    updateSensorData
+ * Description: Collects the latest sensor and
+ *              alarm values from all hardware
+ *              modules.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Updates the internal SensorData
+ *              structure with the latest battery
+ *              voltages, environmental sensor
+ *              readings and alarm states.
+ *************************************************/
+void updateData(void)
+{
+    readBatteryVoltages(data);
+    readEnvironmentalValues(data);
+    readAlarmPins(data);
 }

@@ -132,7 +132,7 @@ float applyCalibration(float voltage, float gain, float offset)
  * Notes:       Invalid readings are reported as
  *              error values.
  *************************************************/
-void readSHT31(SensorData& data)
+void readEnvironmentalValues(SensorData& data)
 {
     // Read temperature and humidity from SHT31 sensor
     float temperature = sht31.readTemperature();
@@ -158,7 +158,7 @@ void readSHT31(SensorData& data)
  * Returns:     None (void function)
  * Notes:       Alarm inputs are active LOW.
  *************************************************/
-void readAlarms(SensorData& data)
+void readAlarmPins(SensorData& data)
 {
     data.waterAlarm = digitalRead(PIN_WATER_ALARM) == LOW;
     data.smokeAlarm = digitalRead(PIN_SMOKE_ALARM) == LOW;
@@ -175,6 +175,6 @@ void readAllSensorData(SensorData& data)
 {
     // Read all sensor data
     readBatteryVoltages(data);
-    readSHT31(data);
-    readAlarms(data);
+    readEnvironmentalValues(data);
+    readAlarmPins(data);
 };

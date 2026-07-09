@@ -30,20 +30,6 @@
 
 // Timestamp of last telemetry transmission
 static unsigned long lastTelemetry = 0;
-
-// Temporary JSON payload buffer
-static char payload[TELEMETRY_PAYLOAD_SIZE];
-
-// Current sensor and alarm values
-static SensorData data = {
-    .houseBatteryVoltage = -999.0f,
-    .engineBatteryVoltage = -999.0f,
-    .temperature = -999.0f,
-    .humidity = -999.0f,
-    .waterAlarm = false,
-    .smokeAlarm = false
-};
-
 // Current program state
 ProgramState state; 
 // Timestamp of current state entry
@@ -173,7 +159,7 @@ void runStateMachine()
             if (mqttState == MqttConnectionState::CONNECTED)
             {
                 setIndicatorState(IndicatorState::MQTT_ONLINE);
-                state = ProgramState::READ_SENSORS;
+                state = ProgramState::COLLECT_DATA;
             }
             else if (mqttState == MqttConnectionState::FAILED)
             {
@@ -188,13 +174,13 @@ void runStateMachine()
         }
 
         /*****************************************************
-         * STATE: READ_SENSORS
-         * Acquires the latest sensor and alarm values.
+         * STATE: GATHER_DATA
+         * Collects all data required for the current
+         * measurement cycle.
          *****************************************************/
-        case ProgramState::READ_SENSORS:
-            readBatteryVoltages(data);
-            readSHT31(data);
-            readAlarms(data);
+        case ProgramState::COLLECT_DATA:
+            LOG_INFO("Collecting data...");
+            updateData();
 
             if (isAlarmActive())
             {
@@ -223,9 +209,9 @@ void runStateMachine()
             }
 
             mqttLoop();
-            getTelemetry(payload, data);
+           
 
-            if (mqttPublish(getDeviceId(), payload))
+            if (mqttPublish(getDeviceId(), getTelemetry()))
             {
                 if (!isAlarmActive())
                 {
@@ -280,7 +266,7 @@ void runStateMachine()
 
             if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS)
             {
-                state = ProgramState::READ_SENSORS;
+                state = ProgramState::COLLECT_DATA;
             }
             break;
 

@@ -12,4 +12,5 @@ struct SensorData
     bool smokeAlarm;
 };
 
-char* getTelemetry(char* payload, SensorData& data);
+char* getTelemetry(void);
+void  updateData(void);

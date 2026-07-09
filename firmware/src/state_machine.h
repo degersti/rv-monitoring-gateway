@@ -3,7 +3,7 @@
 enum class ProgramState {
     BOOT,
     INIT_HARDWARE,
-    READ_SENSORS,
+    COLLECT_DATA,
     CONNECT_WIFI,
     CONNECT_MQTT,
     PUBLISH_DATA,
