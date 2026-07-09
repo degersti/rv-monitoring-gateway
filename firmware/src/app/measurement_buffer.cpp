@@ -183,6 +183,7 @@ static bool readFromFlash(uint16_t index, MeasurementRecord& record)
  *************************************************/
 bool initBuffer()
 {
+    LOG_INFO("Initializing measurement buffer...");
     if (loadMetadata())
     { 
         LOG_DEBUG("Measurement buffer metadata loaded.");

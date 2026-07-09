@@ -17,6 +17,7 @@
 #include "app/runtime_manager.h"
 #include "app/hardware_manager.h"
 #include "app/status_indicator.h"
+#include "app/time_manager.h"
 #include "state_machine.h"
 
 /*************************************************
@@ -36,6 +37,7 @@ void setup()
     initWatchdog();
     initHardwareManager();
     initStatusIndicator();
+    initTimeManager();
     initStateMachine();
 }
 
