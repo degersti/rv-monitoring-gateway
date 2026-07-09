@@ -4,6 +4,6 @@
 
 bool initSensorManager(void);
 bool readEnvironmentalValues(SensorData& data);
-bool readBatteryVoltages(SensorData& data);
-bool readAlarmPins(SensorData& data);
+void readBatteryVoltages(SensorData& data);
+void readAlarmPins(SensorData& data);
 
