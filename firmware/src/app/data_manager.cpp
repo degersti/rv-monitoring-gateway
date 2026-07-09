@@ -52,7 +52,8 @@ char* getTelemetry(void)
     snprintf(
             payload,
             TELEMETRY_PAYLOAD_SIZE,
-            "{\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
+            "{\"bootEpochId\":%lu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
+            (unsigned long)data.bootEpochId,
             data.houseBatteryVoltage,
             data.engineBatteryVoltage,
             data.temperature,
