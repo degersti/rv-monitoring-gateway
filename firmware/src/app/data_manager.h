@@ -3,7 +3,8 @@
 struct SensorData
 {
     uint32_t bootEpochId;
-    
+    uint64_t timestamp;
+
     float houseBatteryVoltage;
     float engineBatteryVoltage;
 

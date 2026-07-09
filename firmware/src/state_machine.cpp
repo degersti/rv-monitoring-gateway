@@ -29,8 +29,6 @@
 #include "app/data_manager.h"
 #include "app/status_indicator.h"
 
-// Timestamp of last telemetry transmission
-static unsigned long lastTelemetry = 0;
 // Current program state
 ProgramState state; 
 // Timestamp of current state entry
@@ -213,7 +211,6 @@ void runStateMachine()
                 getMqttConnectionStatus() &&
                 mqttPublish(getDeviceId(), getTelemetry()))
             {
-                lastTelemetry = millis();
                 setState(ProgramState::WAIT_NEXT_CYCLE);
             }
             else
@@ -239,18 +236,6 @@ void runStateMachine()
          * the next measurement interval.
          *****************************************************/
         case ProgramState::WAIT_NEXT_CYCLE:
-            if (!getWiFiConnectionStatus())
-            {
-                disconnectMqtt();
-                setState(ProgramState::CONNECT_WIFI);
-                break;
-            }
-
-            if (!getMqttConnectionStatus())
-            {
-                setState(ProgramState::CONNECT_MQTT);
-                break;
-            }
 
             mqttLoop();
 
@@ -259,8 +244,20 @@ void runStateMachine()
                 setIndicatorState(IndicatorState::MQTT_ONLINE);
             }
 
-            if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS)
+            if (millis() - stateStartTime >= TELEMETRY_INTERVAL_MS)
             {
+                if (!getWiFiConnectionStatus())
+                {
+                    disconnectMqtt();
+                    setState(ProgramState::CONNECT_WIFI);
+                    break;
+                }
+
+                if (!getMqttConnectionStatus())
+                {
+                    setState(ProgramState::CONNECT_MQTT);
+                    break;
+                }
                 setState(ProgramState::COLLECT_DATA);
             }
             break;

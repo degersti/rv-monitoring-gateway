@@ -17,6 +17,7 @@
 #include "config.h"
 #include "app/data_manager.h"
 #include "app/runtime_manager.h"
+#include "app/time_manager.h"
 #include "app/sensor_manager.h"
 
 
@@ -26,6 +27,7 @@ static char payload[TELEMETRY_PAYLOAD_SIZE];
 // Current sensor and alarm values
 static SensorData data = {
     .bootEpochId = 0,
+    .timestamp = 0,
     .houseBatteryVoltage = -999.0f,
     .engineBatteryVoltage = -999.0f,
     .temperature = -999.0f,
@@ -52,8 +54,9 @@ char* getTelemetry(void)
     snprintf(
             payload,
             TELEMETRY_PAYLOAD_SIZE,
-            "{\"bootEpochId\":%lu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
+            "{\"bootEpochId\":%lu,\"timestamp\":%llu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
             (unsigned long)data.bootEpochId,
+            (unsigned long long)data.timestamp,
             data.houseBatteryVoltage,
             data.engineBatteryVoltage,
             data.temperature,
@@ -80,6 +83,7 @@ bool updateData(void)
     bool success = true;
 
     data.bootEpochId = getBootEpochId();
+    data.timestamp = getCurrentTimestamp();
     readBatteryVoltages(data);
     success &= readEnvironmentalValues(data);
     readAlarmPins(data);

@@ -115,13 +115,17 @@ void initTimeManager()
 {
     // Setting system time to zero if no NTP sync 
     // possible after hard reset / powerloss
+    LOG_INFO("Initializing Time Manager");
     if (!timeAvailable && !relativeTimeInitialized)
     {
-        LOG_INFO("Initializing system time to zero");
+        LOG_INFO("Time initialized to zero");
         setSystemTime(0);
         relativeTimeInitialized = true;
     }
-    LOG_INFO("No initialization required, system time is already valid");
+    else
+    {
+        LOG_INFO("Time restored from RTC");
+    }
 }
 /*************************************************
  * Function:    isTimeValid
