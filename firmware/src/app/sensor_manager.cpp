@@ -114,7 +114,7 @@ float applyCalibration(float voltage, float gain, float offset)
  *              applyCalibration() applies gain and
  *              offset correction.
  *************************************************/
- void readBatteryVoltages(SensorData& data)
+ void readBatteryVoltages(MeasurementRecord& data)
 {
     // Read raw, divider-compensated battery voltages
     float rawHouseVoltage = readVoltageRaw(PIN_HOUSE_ADC);
@@ -133,7 +133,7 @@ float applyCalibration(float voltage, float gain, float offset)
  * Notes:       Invalid readings are reported as
  *              error values.
  *************************************************/
-bool readEnvironmentalValues(SensorData& data)
+bool readEnvironmentalValues(MeasurementRecord& data)
 {
     // Read temperature and humidity from SHT31 sensor
     float temperature = sht31.readTemperature();
@@ -160,7 +160,7 @@ bool readEnvironmentalValues(SensorData& data)
  * Returns:     None (void function)
  * Notes:       Alarm inputs are active LOW.
  *************************************************/
-void readAlarmPins(SensorData& data)
+void readAlarmPins(MeasurementRecord& data)
 {
     data.waterAlarm = digitalRead(PIN_WATER_ALARM) == LOW;
     data.smokeAlarm = digitalRead(PIN_SMOKE_ALARM) == LOW;
@@ -173,7 +173,7 @@ void readAlarmPins(SensorData& data)
  * Notes:       Convenience wrapper for all sensor
  *              acquisition functions.
  *************************************************/
-void readAllSensorData(SensorData& data)
+void readAllSensorData(MeasurementRecord& data)
 {
     // Read all sensor data
     readBatteryVoltages(data);

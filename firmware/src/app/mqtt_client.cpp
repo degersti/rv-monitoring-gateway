@@ -237,6 +237,8 @@ bool getMqttConnectionStatus(void)
  *************************************************/
 bool mqttPublish(const char* deviceId, const char* payload)
 {
+    LOG_DEBUG("Publishing telemetry data to MQTT broker");
+    LOG_DEBUG("Telemetry payload: %s", payload);
     if (!mqttClient.connected())
     {
         LOG_WARN("Payload message failed: MQTT disconnected");
@@ -250,11 +252,11 @@ bool mqttPublish(const char* deviceId, const char* payload)
     if (result)
     {
         LOG_INFO("Payload message sent");
-        LOG_DEBUG("%s", payload);
     }
     else
     {
         LOG_WARN("Payload message failed");
+        
     }
 
     return result;

@@ -24,6 +24,7 @@
 #include "app/sensor_manager.h"
 #include "app/data_manager.h"
 #include "app/time_manager.h"
+#include "app/measurement_buffer.h"
 #include "app/wifi_manager.h"
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
@@ -105,6 +106,12 @@ void runStateMachine()
         case ProgramState::INIT_SYSTEM:
             LOG_INFO("Initializing system modules");
             initTimeManager();
+            if(!initBuffer())
+            {
+                LOG_ERROR("Measurement buffer initialization failed");
+                setState(ProgramState::ERROR);
+                break;
+            }
             initWifi();
             initMqtt(getWifiClient());
             if (initSensorManager())
@@ -225,7 +232,7 @@ void runStateMachine()
          * communication is unavailable.
          *****************************************************/
         case ProgramState::BUFFER_DATA:
-            /* NO CURRENT IMPLEMENTATION */
+            pushRecord(getCurrentData());
             setState(ProgramState::WAIT_NEXT_CYCLE);
             break;
 

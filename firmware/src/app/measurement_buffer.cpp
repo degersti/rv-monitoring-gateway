@@ -52,8 +52,8 @@ static bool saveMetadata()
         sizeof(metaData)
     );
 
-    LOG_DEBUG("saveMetadata written bytes: %u\n", writtenBytes);
-    LOG_DEBUG("sizeof(metaData): %u\n", sizeof(metaData));
+    LOG_DEBUG("saveMetadata written bytes: %u", writtenBytes);
+    LOG_DEBUG("sizeof(metaData): %u", sizeof(metaData));
 
     preferences.end();
 
@@ -81,10 +81,10 @@ static bool loadMetadata()
 
     preferences.end();
 
-    LOG_DEBUG("loadMetadata read bytes: %u\n", readBytes);
-    LOG_DEBUG("sizeof(metaData): %u\n", sizeof(metaData));
-    LOG_DEBUG("Magic read: 0x%08lX\n", metaData.magic);
-    LOG_DEBUG("Magic exp : 0x%08lX\n", BUFFER_METADATA_MAGIC);
+    LOG_DEBUG("loadMetadata read bytes: %u", readBytes);
+    LOG_DEBUG("sizeof(metaData): %u", sizeof(metaData));
+    LOG_DEBUG("Magic read: 0x%08lX", metaData.magic);
+    LOG_DEBUG("Magic exp : 0x%08lX", BUFFER_METADATA_MAGIC);
 
     if (readBytes != sizeof(metaData))
     {
@@ -187,10 +187,10 @@ bool initBuffer()
     if (loadMetadata())
     { 
         LOG_DEBUG("Measurement buffer metadata loaded.");
-        LOG_DEBUG("ReadIndex : %u\n", metaData.readIndex);
-        LOG_DEBUG("WriteIndex: %u\n", metaData.writeIndex);
-        LOG_DEBUG("Count     : %u\n", metaData.recordCount);
-        LOG_DEBUG("Overflow  : %lu\n", metaData.overflowCounter);
+        LOG_DEBUG("ReadIndex : %u", metaData.readIndex);
+        LOG_DEBUG("WriteIndex: %u", metaData.writeIndex);
+        LOG_DEBUG("Count     : %u", metaData.recordCount);
+        LOG_DEBUG("Overflow  : %lu", metaData.overflowCounter);
 
         return true;
     }
@@ -215,15 +215,18 @@ bool initBuffer()
  *************************************************/
 bool pushRecord(const MeasurementRecord& record)
 {
+    LOG_INFO("Storing measurement record in buffer at index %u", metaData.writeIndex);
     if (isFull())
     {
         // Discard oldest record.
+        LOG_WARN("Measurement buffer full. Overwriting oldest record.");
         metaData.readIndex = (metaData.readIndex + 1) % MEASUREMENT_BUFFER_SIZE;
 
         metaData.overflowCounter++;
     }
     else
     {
+        LOG_INFO("Storing measurement record at index %u", metaData.writeIndex);
         metaData.recordCount++;
     }
 

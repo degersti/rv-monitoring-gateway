@@ -15,6 +15,7 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "app/debug_logger.h"
 #include "app/data_manager.h"
 #include "app/runtime_manager.h"
 #include "app/time_manager.h"
@@ -25,7 +26,7 @@
 static char payload[TELEMETRY_PAYLOAD_SIZE];
 
 // Current sensor and alarm values
-static SensorData data = {
+static MeasurementRecord data = {
     .bootEpochId = 0,
     .timestamp = 0,
     .houseBatteryVoltage = -999.0f,
@@ -54,9 +55,9 @@ char* getTelemetry(void)
     snprintf(
             payload,
             TELEMETRY_PAYLOAD_SIZE,
-            "{\"bootEpochId\":%lu,\"timestamp\":%llu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
+            "{\"bootEpochId\":%lu,\"timestamp\":%lu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
             (unsigned long)data.bootEpochId,
-            (unsigned long long)data.timestamp,
+            (unsigned long)data.timestamp,
             data.houseBatteryVoltage,
             data.engineBatteryVoltage,
             data.temperature,
@@ -88,5 +89,29 @@ bool updateData(void)
     success &= readEnvironmentalValues(data);
     readAlarmPins(data);
 
+    LOG_DEBUG("Measurement Record updated: bootEpochId=%lu, timestamp=%lu, houseBatteryVoltage=%.1f, engineBatteryVoltage=%.1f, temperature=%.1f, humidity=%.1f, waterAlarm=%s, smokeAlarm=%s",
+              (unsigned long)data.bootEpochId,
+              (unsigned long)data.timestamp,
+              data.houseBatteryVoltage,
+              data.engineBatteryVoltage,
+              data.temperature,
+              data.humidity,
+              data.waterAlarm ? "true" : "false",
+              data.smokeAlarm ? "true" : "false");
+
     return success;
+}
+/*************************************************
+ * Function:    getCurrentData
+ * Description: Returns a reference to the current
+ *              sensor and alarm data structure.
+ * Parameters:  None
+ * Returns:     Reference to the current SensorData
+ *              structure
+ * Notes:       Provides access to the latest
+ *              collected sensor and alarm values.
+ *************************************************/
+MeasurementRecord& getCurrentData()
+{
+    return data;
 }

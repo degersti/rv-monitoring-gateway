@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "measurement_record.h"
+#include "app/data_manager.h"
 
 // Buffer metadata
 struct MeasurementBufferMetadata

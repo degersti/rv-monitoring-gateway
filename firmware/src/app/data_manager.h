@@ -1,9 +1,9 @@
 #pragma once
 
-struct SensorData
+struct MeasurementRecord
 {
     uint32_t bootEpochId;
-    uint64_t timestamp;
+    uint32_t timestamp;
 
     float houseBatteryVoltage;
     float engineBatteryVoltage;
@@ -17,3 +17,4 @@ struct SensorData
 
 char* getTelemetry(void);
 bool  updateData(void);
+MeasurementRecord& getCurrentData(void);
