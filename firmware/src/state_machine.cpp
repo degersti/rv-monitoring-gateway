@@ -108,11 +108,11 @@ void runStateMachine()
             initMqtt(getWifiClient());
             if (initSensorManager())
             {
-                state = ProgramState::CONNECT_WIFI;
+                setState(ProgramState::CONNECT_WIFI);
             }
             else
             {
-                state = ProgramState::ERROR;
+                setState(ProgramState::ERROR);
             }
             break;
 
@@ -124,19 +124,21 @@ void runStateMachine()
         {
             WiFiConnectionState wifiState = processWifiConnection();
 
-            if (wifiState == WiFiConnectionState::CONNECTED)
+            switch (wifiState)
             {
-                setIndicatorState(IndicatorState::WIFI_CONNECTED);
-                state = ProgramState::CONNECT_MQTT;
-            }
-            else if (wifiState == WiFiConnectionState::FAILED)
-            {
-                setIndicatorState(IndicatorState::WIFI_CONNECTING);
-                state = ProgramState::BUFFER_DATA;
-            }
-            else
-            {
-                setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                case WiFiConnectionState::CONNECTED:
+                    setIndicatorState(IndicatorState::WIFI_CONNECTED);
+                    setState(ProgramState::CONNECT_MQTT);
+                    break;
+
+                case WiFiConnectionState::FAILED:
+                    setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                    setState(ProgramState::COLLECT_DATA);
+                    break;
+
+                case WiFiConnectionState::CONNECTING:
+                    setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                    break;
             }
             break;
         }
@@ -147,34 +149,29 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::CONNECT_MQTT:
         {
-            if (!getWiFiConnectionStatus())
-            {
-                resetMqttConnection();
-                state = ProgramState::CONNECT_WIFI;
-                break;
-            }
-
             MqttConnectionState mqttState = processMqttConnection(getDeviceId());
 
-            if (mqttState == MqttConnectionState::CONNECTED)
+            switch (mqttState)
             {
-                setIndicatorState(IndicatorState::MQTT_ONLINE);
-                state = ProgramState::COLLECT_DATA;
-            }
-            else if (mqttState == MqttConnectionState::FAILED)
-            {
-                setIndicatorState(IndicatorState::MQTT_CONNECTING);
-                state = ProgramState::BUFFER_DATA;
-            }
-            else
-            {
-                setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                case MqttConnectionState::CONNECTED:
+                    setIndicatorState(IndicatorState::MQTT_ONLINE);
+                    setState(ProgramState::COLLECT_DATA);
+                    break;
+
+                case MqttConnectionState::FAILED:
+                    setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                    setState(ProgramState::COLLECT_DATA);
+                    break;
+
+                case MqttConnectionState::CONNECTING:
+                    setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                    break;
             }
             break;
         }
 
         /*****************************************************
-         * STATE: GATHER_DATA
+         * STATE: COLLECT_DATA
          * Collects all data required for the current
          * measurement cycle.
          *****************************************************/
@@ -187,7 +184,7 @@ void runStateMachine()
                 setIndicatorState(IndicatorState::ALARM_ACTIVE);
             }
 
-            state = ProgramState::PUBLISH_DATA;
+            setState(ProgramState::PUBLISH_DATA);
             break;
 
         /*****************************************************
@@ -195,35 +192,17 @@ void runStateMachine()
          * Creates and publishes the telemetry payload.
          *****************************************************/
         case ProgramState::PUBLISH_DATA:
-            if (!getWiFiConnectionStatus())
+
+            if (getWiFiConnectionStatus() &&
+                getMqttConnectionStatus() &&
+                mqttPublish(getDeviceId(), getTelemetry()))
             {
-                resetMqttConnection();
-                state = ProgramState::CONNECT_WIFI;
-                break;
-            }
-
-            if (!getMqttConnectionStatus())
-            {
-                state = ProgramState::CONNECT_MQTT;
-                break;
-            }
-
-            mqttLoop();
-           
-
-            if (mqttPublish(getDeviceId(), getTelemetry()))
-            {
-                if (!isAlarmActive())
-                {
-                    setIndicatorState(IndicatorState::MQTT_ONLINE);
-                }
-
                 lastTelemetry = millis();
-                state = ProgramState::WAIT_NEXT_CYCLE;
+                setState(ProgramState::WAIT_NEXT_CYCLE);
             }
             else
             {
-                state = ProgramState::CONNECT_MQTT;
+                setState(ProgramState::BUFFER_DATA);
             }
             break;
 
@@ -234,7 +213,7 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::BUFFER_DATA:
             /* NO CURRENT IMPLEMENTATION */
-            state = ProgramState::WAIT_NEXT_CYCLE;
+            setState(ProgramState::WAIT_NEXT_CYCLE);
             break;
 
         /*****************************************************
@@ -247,13 +226,13 @@ void runStateMachine()
             if (!getWiFiConnectionStatus())
             {
                 resetMqttConnection();
-                state = ProgramState::CONNECT_WIFI;
+                setState(ProgramState::CONNECT_WIFI);
                 break;
             }
 
             if (!getMqttConnectionStatus())
             {
-                state = ProgramState::CONNECT_MQTT;
+                setState(ProgramState::CONNECT_MQTT);
                 break;
             }
 
@@ -266,7 +245,7 @@ void runStateMachine()
 
             if (millis() - lastTelemetry >= TELEMETRY_INTERVAL_MS)
             {
-                state = ProgramState::COLLECT_DATA;
+                setState(ProgramState::COLLECT_DATA);
             }
             break;
 
