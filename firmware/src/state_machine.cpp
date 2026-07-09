@@ -131,7 +131,14 @@ void runStateMachine()
             {
                 case WiFiConnectionState::CONNECTED:
                     setIndicatorState(IndicatorState::WIFI_CONNECTED);
-                    setState(ProgramState::CONNECT_MQTT);
+                    if(isTimeSyncRequired())
+                    {
+                        setState(ProgramState::SYNC_TIME);
+                    }
+                    else
+                    {
+                        setState(ProgramState::CONNECT_MQTT);
+                    }
                     break;
 
                 case WiFiConnectionState::FAILED:
@@ -257,7 +264,22 @@ void runStateMachine()
                 setState(ProgramState::COLLECT_DATA);
             }
             break;
-
+        /*****************************************************
+         * STATE: SYNC_TIME
+         * Synchronizes the system clock with an NTP server.
+         *****************************************************/
+        case ProgramState::SYNC_TIME:
+            LOG_INFO("Synchronizing system time with NTP server");
+            if (forceTimeSync())
+            {
+                LOG_INFO("NTP synchronization successful");   
+            }
+            else
+            {
+                LOG_WARN("NTP synchronization failed");
+            }
+            setState(ProgramState::CONNECT_MQTT);
+            break;
         /*****************************************************
          * STATE: ERROR
          * Critical system error.

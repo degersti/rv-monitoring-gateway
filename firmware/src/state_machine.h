@@ -9,6 +9,7 @@ enum class ProgramState {
     PUBLISH_DATA,
     BUFFER_DATA,
     WAIT_NEXT_CYCLE,
+    SYNC_TIME,
     ERROR
 };
 

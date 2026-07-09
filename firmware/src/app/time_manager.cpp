@@ -121,6 +121,7 @@ void initTimeManager()
         setSystemTime(0);
         relativeTimeInitialized = true;
     }
+    LOG_INFO("No initialization required, system time is already valid");
 }
 /*************************************************
  * Function:    isTimeValid
