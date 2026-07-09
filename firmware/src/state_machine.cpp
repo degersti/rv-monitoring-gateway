@@ -105,6 +105,7 @@ void runStateMachine()
          * Initializes all system modules and peripherals.
          *****************************************************/
         case ProgramState::INIT_SYSTEM:
+            LOG_INFO("Initializing system modules");
             initTimeManager();
             initWifi();
             initMqtt(getWifiClient());
