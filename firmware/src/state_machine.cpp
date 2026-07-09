@@ -177,8 +177,14 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::COLLECT_DATA:
             LOG_INFO("Collecting data...");
-            updateData();
 
+            if (!updateData())
+            {
+                LOG_ERROR("Data update failed.");
+                setState(ProgramState::ERROR);
+                break;
+            }
+            
             if (isAlarmActive())
             {
                 setIndicatorState(IndicatorState::ALARM_ACTIVE);
