@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include "Wire.h"
 #include "config.h"
+#include "app/debug_logger.h"
 #include "Adafruit_SHT31.h"
 #include "app/sensor_manager.h"
 
@@ -45,10 +46,10 @@ bool initSensorManager(void)
     // Initialize I2C interface
     Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
     if (!sht31.begin(SHT31_ADDR)) { 
-        Serial.println("Sensor nicht gefunden!");
+        LOG_WARN("Sensor nicht gefunden!");
         return false;                               
     }
-    Serial.println("Sensor gefunden!");    
+    LOG_INFO("Sensor gefunden!");    
     return true;
 }
 /*************************************************
@@ -140,7 +141,7 @@ void readSHT31(SensorData& data)
     // Check if the readings are valid
      if (isnan(temperature) || isnan(humidity))
     {
-        Serial.println("SHT31 read failed");
+        LOG_ERROR("SHT31 read failed");
         data.temperature = -999.0f;
         data.humidity = -999.0f;
         return;

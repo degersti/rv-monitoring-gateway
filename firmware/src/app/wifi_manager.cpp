@@ -36,7 +36,7 @@ static uint32_t lastStatusPrintTime = 0;
 
 static void startWifiConnection(void)
 {
-    Serial.print("Connecting to WiFi");
+    LOG_INFO("Connecting to WiFi");
 
     WiFi.disconnect(true);
     delay(10);
@@ -90,7 +90,7 @@ WiFiConnectionState processWifiConnection(void)
 
     if (wifiState == WiFiConnectionState::CONNECTED)
     {
-        Serial.println("WiFi disconnected");
+        LOG_INFO("WiFi disconnected");
         wifiState = WiFiConnectionState::IDLE;
     }
 
