@@ -141,7 +141,7 @@ WiFiConnectionState processWifiConnection(void)
  * Notes:       Disconnects WiFi and clears the
  *              connection state.
  *************************************************/
-void resetWifiConnection(void)
+void disconnectWifi(void)
 {
     WiFi.disconnect(true);
     wifiState = WiFiConnectionState::IDLE;

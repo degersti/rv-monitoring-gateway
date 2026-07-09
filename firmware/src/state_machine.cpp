@@ -184,7 +184,7 @@ void runStateMachine()
                 setState(ProgramState::ERROR);
                 break;
             }
-            
+
             if (isAlarmActive())
             {
                 setIndicatorState(IndicatorState::ALARM_ACTIVE);
@@ -231,7 +231,7 @@ void runStateMachine()
         case ProgramState::WAIT_NEXT_CYCLE:
             if (!getWiFiConnectionStatus())
             {
-                resetMqttConnection();
+                disconnectMqtt();
                 setState(ProgramState::CONNECT_WIFI);
                 break;
             }

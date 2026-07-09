@@ -165,7 +165,7 @@ MqttConnectionState processMqttConnection(const char* deviceId)
  * Notes:       The next call to processMqttConnection
  *              will attempt to reconnect.
  *************************************************/
-void resetMqttConnection(void)
+void disconnectMqtt(void)
 {
     if (mqttClient.connected())
     {

@@ -12,7 +12,7 @@ enum class WiFiConnectionState
 
 void initWifi(void);
 WiFiConnectionState processWifiConnection(void);
-void resetWifiConnection(void);
+void disconnectWifi(void);
 bool getWiFiConnectionStatus(void);
 Client& getWifiClient(void);
 

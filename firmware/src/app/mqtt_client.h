@@ -12,7 +12,7 @@ enum class MqttConnectionState
 
 void initMqtt(Client& client);
 MqttConnectionState processMqttConnection(const char* deviceId);
-void resetMqttConnection(void);
+void disconnectMqtt(void);
 bool mqttConnect(const char* deviceId);
 bool getMqttConnectionStatus(void);
 bool mqttPublish(const char* deviceId, const char* payload);
