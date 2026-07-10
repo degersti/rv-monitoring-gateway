@@ -148,7 +148,7 @@ void runStateMachine()
 
                 case WiFiConnectionState::FAILED:
                     setIndicatorState(IndicatorState::WIFI_CONNECTING);
-                    setState(ProgramState::COLLECT_DATA);
+                    setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case WiFiConnectionState::CONNECTING:
@@ -170,12 +170,12 @@ void runStateMachine()
             {
                 case MqttConnectionState::CONNECTED:
                     setIndicatorState(IndicatorState::MQTT_ONLINE);
-                    setState(ProgramState::COLLECT_DATA);
+                    setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case MqttConnectionState::FAILED:
                     setIndicatorState(IndicatorState::MQTT_CONNECTING);
-                    setState(ProgramState::COLLECT_DATA);
+                    setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case MqttConnectionState::CONNECTING:
@@ -186,11 +186,11 @@ void runStateMachine()
         }
 
         /*****************************************************
-         * STATE: COLLECT_DATA
-         * Collects all data required for the current
-         * measurement cycle.
+         * STATE: CREATE_RECORD
+         * Collects sensor data and updates the current 
+         * measurement record.
          *****************************************************/
-        case ProgramState::COLLECT_DATA:
+        case ProgramState::CREATE_RECORD:
             LOG_INFO("Collecting data...");
 
             if (!updateData())
@@ -265,7 +265,7 @@ void runStateMachine()
                     setState(ProgramState::CONNECT_MQTT);
                     break;
                 }
-                setState(ProgramState::COLLECT_DATA);
+                setState(ProgramState::CREATE_RECORD);
             }
             break;
         /*****************************************************

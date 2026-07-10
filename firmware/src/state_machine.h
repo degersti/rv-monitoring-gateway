@@ -3,7 +3,7 @@
 enum class ProgramState {
     BOOT,
     INIT_SYSTEM,
-    COLLECT_DATA,
+    CREATE_RECORD,
     CONNECT_WIFI,
     CONNECT_MQTT,
     PUBLISH_DATA,
