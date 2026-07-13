@@ -21,6 +21,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include "app/debug_logger.h"
+#include "app/debug_strings.h"
 
 // WiFi network credentials
 const char* wifi_ssid = WIFI_SSID;
@@ -32,18 +33,34 @@ static WiFiClientSecure espClient;
 static WiFiConnectionState wifiState = WiFiConnectionState::IDLE;
 static uint32_t connectStartTime = 0;
 static uint32_t lastRetryTime = 0;
-static uint32_t lastStatusPrintTime = 0;
+static uint32_t wifiConnectionAttempt = 0;
 
 static void startWifiConnection(void)
 {
-    LOG_INFO("Connecting to WiFi");
+    wifiConnectionAttempt++;
+    if (wifiConnectionAttempt == 1)
+    {
+        LOG_INFO(
+            "Connecting to WiFi: SSID=%s, timeout=%.1f s",
+            wifi_ssid,
+            WIFI_CONNECT_TIMEOUT_MS / 1000.0f);
+    }
+    else
+    {
+        LOG_INFO(
+            "WiFi reconnect attempt %lu",
+            static_cast<unsigned long>(wifiConnectionAttempt));
+    }
+
+    LOG_DEBUG(
+        "WiFi connection attempt: %lu",
+        static_cast<unsigned long>(wifiConnectionAttempt));
 
     WiFi.disconnect(true);
     delay(10);
     WiFi.begin(wifi_ssid, wifi_password);
 
     connectStartTime = millis();
-    lastStatusPrintTime = connectStartTime;
     wifiState = WiFiConnectionState::CONNECTING;
 }
 
@@ -59,9 +76,14 @@ static void startWifiConnection(void)
 void initWifi(void)
 {
     LOG_INFO("Initializing WiFi");
+
     WiFi.mode(WIFI_STA);
     espClient.setInsecure();
+
     wifiState = WiFiConnectionState::IDLE;
+    connectStartTime = 0;
+    lastRetryTime = 0;
+    wifiConnectionAttempt = 0;
 }
 
 /*************************************************
@@ -81,8 +103,18 @@ WiFiConnectionState processWifiConnection(void)
     {
         if (wifiState != WiFiConnectionState::CONNECTED)
         {
-            LOG_INFO("WiFi connected");
-            LOG_DEBUG("IP Address: %s", WiFi.localIP().toString().c_str());
+            const uint32_t elapsedTime = millis() - connectStartTime;
+
+            LOG_INFO(
+                "WiFi connected: SSID=%s, attempt=%lu, elapsed=%.1f s",
+                wifi_ssid,
+                static_cast<unsigned long>(wifiConnectionAttempt),
+                elapsedTime / 1000.0f);
+
+            LOG_DEBUG(
+                "WiFi network details: IP=%s, RSSI=%d dBm",
+                WiFi.localIP().toString().c_str(),
+                WiFi.RSSI());
         }
 
         wifiState = WiFiConnectionState::CONNECTED;
@@ -91,7 +123,10 @@ WiFiConnectionState processWifiConnection(void)
 
     if (wifiState == WiFiConnectionState::CONNECTED)
     {
-        LOG_INFO("WiFi disconnected");
+        LOG_WARN(
+            "WiFi connection lost: status=%s",
+            getWifiStatusName(WiFi.status()));
+
         wifiState = WiFiConnectionState::IDLE;
     }
 
@@ -113,16 +148,16 @@ WiFiConnectionState processWifiConnection(void)
 
     if (wifiState == WiFiConnectionState::CONNECTING)
     {
-        if (now - lastStatusPrintTime >= WIFI_STATUS_PRINT_INTERVAL_MS)
-        {
-            LOG_PROGRESS(".");
-            lastStatusPrintTime = now;
-        }
-
         if (now - connectStartTime >= WIFI_CONNECT_TIMEOUT_MS)
         {
-            LOG_PROGRESS("\n");
-            LOG_WARN("WiFi connection timeout");
+            const uint32_t elapsedTime = now - connectStartTime;
+            const wl_status_t status = WiFi.status();
+
+            LOG_WARN(
+                "WiFi connection failed: attempt=%lu, status=%s, elapsed=%.1f s",
+                static_cast<unsigned long>(wifiConnectionAttempt),
+                getWifiStatusName(status),
+                elapsedTime / 1000.0f);
 
             WiFi.disconnect(true);
             lastRetryTime = now;
@@ -145,10 +180,13 @@ WiFiConnectionState processWifiConnection(void)
 void disconnectWifi(void)
 {
     WiFi.disconnect(true);
+
     wifiState = WiFiConnectionState::IDLE;
     connectStartTime = 0;
     lastRetryTime = 0;
-    lastStatusPrintTime = 0;
+    wifiConnectionAttempt = 0;
+
+    LOG_DEBUG("WiFi connection handling reset");
 }
 
 /*************************************************
