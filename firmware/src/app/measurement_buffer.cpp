@@ -52,8 +52,9 @@ static bool saveMetadata()
         sizeof(metaData)
     );
 
-    LOG_DEBUG("saveMetadata written bytes: %u", writtenBytes);
-    LOG_DEBUG("sizeof(metaData): %u", sizeof(metaData));
+    LOG_DEBUG("Metadata write: %u/%u bytes",
+              static_cast<unsigned>(writtenBytes),
+              static_cast<unsigned>(sizeof(metaData)));
 
     preferences.end();
 
@@ -81,8 +82,9 @@ static bool loadMetadata()
 
     preferences.end();
 
-    LOG_DEBUG("loadMetadata read bytes: %u", readBytes);
-    LOG_DEBUG("sizeof(metaData): %u", sizeof(metaData));
+    LOG_DEBUG("Metadata read: %u/%u bytes",
+              static_cast<unsigned>(readBytes),
+              static_cast<unsigned>(sizeof(metaData)));
     LOG_DEBUG("Magic read: 0x%08lX", metaData.magic);
     LOG_DEBUG("Magic exp : 0x%08lX", BUFFER_METADATA_MAGIC);
 
@@ -215,29 +217,75 @@ bool initBuffer()
  *************************************************/
 bool pushRecord(const MeasurementRecord& record)
 {
-    LOG_INFO("Storing measurement record in buffer at index %u", metaData.writeIndex);
-    if (isBufferFull())
-    {
-        // Discard oldest record.
-        LOG_WARN("Measurement buffer full. Overwriting oldest record.");
-        metaData.readIndex = (metaData.readIndex + 1) % MEASUREMENT_BUFFER_SIZE;
+    const MeasurementBufferMetadata previousMetadata = metaData;
+    const uint16_t targetIndex = metaData.writeIndex;
+    const bool bufferWasFull = isBufferFull();
 
+    if (bufferWasFull)
+    {
+        MeasurementRecord overwrittenRecord{};
+
+        if (readFromFlash(targetIndex, overwrittenRecord))
+        {
+            LOG_WARN(
+                "Buffer full: overwriting oldest record at index=%u, "
+                "oldTimestamp=%lu, overflowCount=%lu",
+                targetIndex,
+                static_cast<unsigned long>(overwrittenRecord.timestamp),
+                static_cast<unsigned long>(metaData.overflowCounter + 1)
+            );
+        }
+        else
+        {
+            LOG_WARN(
+                "Buffer full: overwriting oldest record at index=%u, "
+                "overflowCount=%lu",
+                targetIndex,
+                static_cast<unsigned long>(metaData.overflowCounter + 1)
+            );
+        }
+    }
+
+    LOG_INFO("Storing measurement record at index=%u", targetIndex);
+
+    if (!writeToFlash(targetIndex, record))
+    {
+        LOG_ERROR("Failed to store measurement record at index=%u", targetIndex);
+        return false;
+    }
+
+    if (bufferWasFull)
+    {
+        metaData.readIndex =
+            (metaData.readIndex + 1) % MEASUREMENT_BUFFER_SIZE;
         metaData.overflowCounter++;
     }
     else
     {
-        LOG_INFO("Storing measurement record at index %u", metaData.writeIndex);
         metaData.recordCount++;
     }
 
-    if (!writeToFlash(metaData.writeIndex, record))
+    metaData.writeIndex =
+        (metaData.writeIndex + 1) % MEASUREMENT_BUFFER_SIZE;
+
+    if (!saveMetadata())
     {
+        metaData = previousMetadata;
+        LOG_ERROR("Failed to save measurement buffer metadata after push");
         return false;
     }
 
-    metaData.writeIndex = (metaData.writeIndex + 1) % MEASUREMENT_BUFFER_SIZE;
+    LOG_DEBUG(
+        "Buffer push complete: writeIndex=%u, readIndex=%u, "
+        "count=%u/%u, overflow=%lu",
+        metaData.writeIndex,
+        metaData.readIndex,
+        metaData.recordCount,
+        MEASUREMENT_BUFFER_SIZE,
+        static_cast<unsigned long>(metaData.overflowCounter)
+    );
 
-    return saveMetadata();
+    return true;
 }
 /*************************************************
  * Function:    readOldestRecord
@@ -253,11 +301,24 @@ bool readOldestRecord(MeasurementRecord& record)
 {
     if (isBufferEmpty())
     {
+        LOG_DEBUG("Cannot read buffered record: buffer is empty");
         return false;
     }
 
-    // record = buffer[metaData.readIndex]; 
-    readFromFlash(metaData.readIndex, record);
+    if (!readFromFlash(metaData.readIndex, record))
+    {
+        LOG_ERROR("Failed to read buffered record at index=%u",
+                  metaData.readIndex);
+        return false;
+    }
+
+    LOG_DEBUG(
+        "Buffered record loaded: index=%u, timestamp=%lu, count=%u/%u",
+        metaData.readIndex,
+        static_cast<unsigned long>(record.timestamp),
+        metaData.recordCount,
+        MEASUREMENT_BUFFER_SIZE
+    );
 
     return true;
 }
@@ -275,13 +336,38 @@ bool removeOldestRecord()
 {
     if (isBufferEmpty())
     {
+        LOG_WARN("Cannot remove buffered record: buffer is already empty");
         return false;
     }
 
-    metaData.readIndex = (metaData.readIndex + 1) % MEASUREMENT_BUFFER_SIZE;
+    const MeasurementBufferMetadata previousMetadata = metaData;
+    const uint16_t removedIndex = metaData.readIndex;
+
+    metaData.readIndex =
+        (metaData.readIndex + 1) % MEASUREMENT_BUFFER_SIZE;
     metaData.recordCount--;
 
-    return saveMetadata();
+    if (!saveMetadata())
+    {
+        metaData = previousMetadata;
+        LOG_ERROR("Failed to save measurement buffer metadata after pop");
+        return false;
+    }
+
+    LOG_DEBUG(
+        "Buffer pop complete: removedIndex=%u, readIndex=%u, count=%u/%u",
+        removedIndex,
+        metaData.readIndex,
+        metaData.recordCount,
+        MEASUREMENT_BUFFER_SIZE
+    );
+
+    if (isBufferEmpty())
+    {
+        LOG_INFO("Measurement buffer empty");
+    }
+
+    return true;
 }
 /*************************************************
  * Function:    isFull

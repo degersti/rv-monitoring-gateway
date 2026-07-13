@@ -101,26 +101,68 @@ static bool hasValidTimestamp(void)
  *************************************************/
 RecordValidity checkValidity(void)
 {
+    const uint32_t currentBootEpochId = getBootEpochId();
+
+    LOG_DEBUG(
+        "Checking record validity: bootEpochId=%lu, currentBootEpochId=%lu, timestamp=%lu",
+        data.bootEpochId,
+        currentBootEpochId,
+        data.timestamp
+    );
+
     if (hasValidTimestamp())
     {
+        LOG_DEBUG("Buffered record validity: VALID");
         return RecordValidity::VALID;
     }
 
-    if (data.bootEpochId != getBootEpochId())
+    if (data.bootEpochId != currentBootEpochId)
     {
+        LOG_WARN(
+            "Discarding buffered record: bootEpochId=%lu, currentBootEpochId=%lu, timestamp=%lu",
+            data.bootEpochId,
+            currentBootEpochId,
+            data.timestamp
+        );
+
         return RecordValidity::DISCARD;
     }
 
     if (!isTimeAvailable())
     {
+        LOG_DEBUG(
+            "Buffered record validity: KEEP "
+            "(waiting for time synchronization)"
+        );
+
         return RecordValidity::KEEP;
     }
 
-    data.timestamp = reconstructTimestamp(data.timestamp);
+    const uint32_t relativeTimestamp = data.timestamp;
+    data.timestamp = reconstructTimestamp(relativeTimestamp);
 
-    return hasValidTimestamp()
-        ? RecordValidity::VALID
-        : RecordValidity::DISCARD;
+    LOG_DEBUG(
+        "Timestamp reconstructed: bootEpochId=%lu, relative=%lu, absolute=%lu",
+        data.bootEpochId,
+        relativeTimestamp,
+        data.timestamp
+    );
+
+    if (hasValidTimestamp())
+    {
+        LOG_DEBUG("Buffered record validity: VALID");
+        return RecordValidity::VALID;
+    }
+
+    LOG_WARN(
+        "Discarding buffered record: timestamp reconstruction failed "
+        "(bootEpochId=%lu, relative=%lu, reconstructed=%lu)",
+        data.bootEpochId,
+        relativeTimestamp,
+        data.timestamp
+    );
+
+    return RecordValidity::DISCARD;
 }
 /*************************************************
  * Function:    updateSensorData
@@ -140,19 +182,31 @@ bool updateData(void)
 
     data.bootEpochId = getBootEpochId();
     data.timestamp = getCurrentTimestamp();
+
     readBatteryVoltages(data);
     success &= readEnvironmentalValues(data);
     readAlarmPins(data);
 
-    LOG_DEBUG("Measurement Record updated: bootEpochId=%lu, timestamp=%lu, houseBatteryVoltage=%.1f, engineBatteryVoltage=%.1f, temperature=%.1f, humidity=%.1f, waterAlarm=%s, smokeAlarm=%s",
-              (unsigned long)data.bootEpochId,
-              (unsigned long)data.timestamp,
-              data.houseBatteryVoltage,
-              data.engineBatteryVoltage,
-              data.temperature,
-              data.humidity,
-              data.waterAlarm ? "true" : "false",
-              data.smokeAlarm ? "true" : "false");
+    LOG_DEBUG(
+        "Measurement updated: "
+        "bootEpochId=%lu, "
+        "timestamp=%lu (%s), "
+        "houseBattery=%.2f V, "
+        "engineBattery=%.2f V, "
+        "temperature=%.1f °C, "
+        "humidity=%.1f %%, "
+        "waterAlarm=%s, "
+        "smokeAlarm=%s",
+        (unsigned long)data.bootEpochId,
+        (unsigned long)data.timestamp,
+        hasValidTimestamp() ? "absolute" : "relative",
+        data.houseBatteryVoltage,
+        data.engineBatteryVoltage,
+        data.temperature,
+        data.humidity,
+        data.waterAlarm ? "YES" : "NO",
+        data.smokeAlarm ? "YES" : "NO"
+    );
 
     return success;
 }
