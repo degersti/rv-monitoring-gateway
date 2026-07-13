@@ -111,11 +111,11 @@ void log(LogLevel level, const char* format, ...)
             break;
 
         case LogLevel::Info:
-            Serial.print("[INFO] ");
+            Serial.print("[INFO ] ");
             break;
 
         case LogLevel::Warning:
-            Serial.print("[WARN] ");
+            Serial.print("[WARN ] ");
             break;
 
         case LogLevel::Error:

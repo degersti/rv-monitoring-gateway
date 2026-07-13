@@ -26,7 +26,7 @@
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 
 /*************************************************
- * Function:    initHardware
+ * Function:    initSensorManager
  * Description: Initializes all hardware peripherals
  *              and sensors.
  * Parameters:  None
@@ -37,20 +37,33 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();
  *************************************************/
 bool initSensorManager(void)
 {
-    // Configure ADC resolution
     LOG_INFO("Initializing ADC");
     analogReadResolution(ADC_RESOLUTION);
     analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
     analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
-   
-    // Initialize I2C interface
-    LOG_INFO("Initializing I2C interface");
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
-    if (!sht31.begin(SHT31_ADDR)) { 
-        LOG_WARN("Sensor nicht gefunden!");
-        return false;                               
+
+    LOG_INFO(
+        "Initializing I2C interface: SDA=%u, SCL=%u",
+        PIN_I2C_SDA,
+        PIN_I2C_SCL
+    );
+
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+
+    if (!sht31.begin(SHT31_ADDR))
+    {
+        LOG_ERROR(
+            "SHT31 initialization failed: address=0x%02X",
+            SHT31_ADDR
+        );
+        return false;
     }
-    LOG_INFO("Sensor gefunden!");    
+
+    LOG_INFO(
+        "Sensor initialized: type=SHT31, address=0x%02X",
+        SHT31_ADDR
+    );
+
     return true;
 }
 /*************************************************
@@ -125,7 +138,7 @@ float applyCalibration(float voltage, float gain, float offset)
     data.engineBatteryVoltage = applyCalibration(rawEngineVoltage, CAL_GAIN_ENGINE_VOLTAGE, CAL_OFFSET_ENGINE_VOLTAGE);
 } 
 /*************************************************
- * Function:    readSHT31
+ * Function:    readEnvironmentalValues
  * Description: Reads temperature and humidity
  *              from the SHT31 sensor.
  * Parameters:  data - Sensor data structure
@@ -154,7 +167,7 @@ bool readEnvironmentalValues(MeasurementRecord& data)
     return true;
 }
 /*************************************************
- * Function:    readAlarms
+ * Function:    readAlarmPins
  * Description: Reads water and smoke alarm inputs.
  * Parameters:  data - Sensor data structure
  * Returns:     None (void function)
@@ -179,4 +192,4 @@ void readAllSensorData(MeasurementRecord& data)
     readBatteryVoltages(data);
     readEnvironmentalValues(data);
     readAlarmPins(data);
-};
+}
