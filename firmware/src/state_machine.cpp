@@ -252,57 +252,111 @@ void runStateMachine()
                     break;
             }
             break;
-        /*****************************************************
-        * STATE: PUBLISH_DATA
-        * Publishes the currently prepared telemetry payload.
-        * After a successful publish, buffered records are
-        * removed and the next available record is prepared.
-        *****************************************************/
+       /*****************************************************
+         * STATE: PUBLISH_DATA
+         * Publishes the prepared telemetry record.
+         *
+         * Buffered records are removed only after successful
+         * publication. Failed current measurements are stored
+         * in the persistent buffer for a later retry.
+         *****************************************************/
         case ProgramState::PUBLISH_DATA:
 
-            // Verify connectivity and attempt MQTT publication
-            if (getWiFiConnectionStatus() &&
-                getMqttConnectionStatus() &&
-                mqttPublish(getDeviceId(), getTelemetry()))
+            // Abort publishing if no Wi-Fi connection is available
+            if (!getWiFiConnectionStatus())
             {
-                LOG_INFO("Telemetry data published successfully.");
+                LOG_WARN("MQTT publish skipped: Wi-Fi not connected.");
 
-                // Remove the record only if the published data
-                // originated from the persistent buffer
-                if (publishSource == PublishSource::BUFFERED_RECORD)
-                {
-                    LOG_INFO("Removing published record from buffer.");
-                    removeOldestRecord();
-                }
-
-                // Publish the next buffered record, if available
-                if (!isBufferEmpty())
-                {
-                    setState(ProgramState::LOAD_BUFFERED_RECORD);
-                }
-                else
-                {
-                    setState(ProgramState::WAIT_NEXT_CYCLE);
-                }
-            }
-            else
-            {
-                LOG_WARN("Failed to publish telemetry data.");
-
-                // Store a new measurement if its initial publish failed
                 if (publishSource == PublishSource::CURRENT_MEASUREMENT)
                 {
                     setState(ProgramState::BUFFER_DATA);
                 }
                 else
                 {
-                    // The historical record remains in the buffer
-                    // and can be retried during the next cycle
                     setState(ProgramState::WAIT_NEXT_CYCLE);
                 }
-            }
-            break;
 
+                break;
+            }
+
+            // Abort publishing if the MQTT client is not connected
+            if (!getMqttConnectionStatus())
+            {
+                LOG_WARN("MQTT publish skipped: MQTT not connected.");
+
+                if (publishSource == PublishSource::CURRENT_MEASUREMENT)
+                {
+                    setState(ProgramState::BUFFER_DATA);
+                }
+                else
+                {
+                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                }
+
+                break;
+            }
+
+            // Log the origin of the record being published
+            if (publishSource == PublishSource::CURRENT_MEASUREMENT)
+            {
+                LOG_INFO(
+                    "MQTT publish: source=CURRENT, timestamp=%lu.",
+                    getCurrentData().timestamp);
+            }
+            else
+            {
+                LOG_INFO(
+                    "MQTT publish: source=BUFFER, timestamp=%lu, buffered=%u.",
+                    getCurrentData().timestamp,
+                    getRecordCount());
+            }
+
+            // Attempt to publish the prepared telemetry payload
+            if (!mqttPublish(getDeviceId(), getTelemetry()))
+            {
+                LOG_WARN("MQTT publish failed.");
+
+                // Preserve the record for a later retry
+                if (publishSource == PublishSource::CURRENT_MEASUREMENT)
+                {
+                    setState(ProgramState::BUFFER_DATA);
+                }
+                else
+                {
+                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                }
+
+                break;
+            }
+
+            LOG_INFO("MQTT publish successful.");
+
+            // Remove a buffered record only after successful publication
+            if (publishSource == PublishSource::BUFFERED_RECORD)
+            {
+                if (!removeOldestRecord())
+                {
+                    LOG_ERROR("Failed to remove published record from buffer.");
+                    setState(ProgramState::ERROR);
+                    break;
+                }
+
+                LOG_DEBUG(
+                    "Published record removed from buffer: remaining=%u.",
+                    getRecordCount());
+            }
+
+            // Continue with the next buffered record, if available
+            if (!isBufferEmpty())
+            {
+                setState(ProgramState::LOAD_BUFFERED_RECORD);
+            }
+            else
+            {
+                setState(ProgramState::WAIT_NEXT_CYCLE);
+            }
+
+            break;
         /*****************************************************
          * STATE: BUFFER_DATA
          * Stores telemetry data locally while network
