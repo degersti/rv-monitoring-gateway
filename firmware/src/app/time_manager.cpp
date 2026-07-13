@@ -137,7 +137,7 @@ void initTimeManager()
  * Notes:       Time becomes valid after a successful
  *              NTP synchronization.
  *************************************************/
-bool isTimeValid()
+bool isTimeAvailable()
 {
     return timeAvailable;
 }

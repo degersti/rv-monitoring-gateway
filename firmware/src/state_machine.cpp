@@ -32,6 +32,7 @@
 
 // Current program state
 ProgramState state; 
+PublishSource publishSource;
 // Timestamp of current state entry
 uint32_t stateStartTime;
 
@@ -47,6 +48,7 @@ uint32_t stateStartTime;
 void initStateMachine()
 {
     state = ProgramState::BOOT;
+    publishSource = PublishSource::CURRENT_MEASUREMENT;
     stateStartTime = millis();
 }
 /*************************************************
@@ -122,8 +124,11 @@ void runStateMachine()
             {
                 setState(ProgramState::ERROR);
             }
+            if(isAlarmActive)
+            {
+                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+            }
             break;
-
         /*****************************************************
          * STATE: CONNECT_WIFI
          * Non-blocking WiFi connection handling.
@@ -184,45 +189,117 @@ void runStateMachine()
             }
             break;
         }
-
         /*****************************************************
          * STATE: CREATE_RECORD
          * Collects sensor data and updates the current 
          * measurement record.
          *****************************************************/
         case ProgramState::CREATE_RECORD:
-            LOG_INFO("Collecting data...");
 
+            LOG_INFO("Collecting data...");
             if (!updateData())
             {
                 LOG_ERROR("Data update failed.");
                 setState(ProgramState::ERROR);
                 break;
             }
-
-            if (isAlarmActive())
+            else
             {
-                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+                publishSource = PublishSource::CURRENT_MEASUREMENT;
             }
 
-            setState(ProgramState::PUBLISH_DATA);
-            break;
-
-        /*****************************************************
-         * STATE: PUBLISH_DATA
-         * Creates and publishes the telemetry payload.
-         *****************************************************/
-        case ProgramState::PUBLISH_DATA:
-
-            if (getWiFiConnectionStatus() &&
-                getMqttConnectionStatus() &&
-                mqttPublish(getDeviceId(), getTelemetry()))
+            if(isTimeAvailable())
             {
-                setState(ProgramState::WAIT_NEXT_CYCLE);
+                setState(ProgramState::PUBLISH_DATA);
             }
             else
             {
                 setState(ProgramState::BUFFER_DATA);
+            }
+            break;
+        /*****************************************************
+         * STATE: LOAD_BUFFERED_RECORD
+         * Loads and validates the oldest buffered measurement
+         * and prepares its telemetry payload for publication.
+         *****************************************************/
+        case ProgramState::LOAD_BUFFERED_RECORD:
+
+            // Load the oldest buffered record.
+            // Leave if the buffer is empty.
+            if (!readOldestRecord(getCurrentData()))
+            {
+                setState(ProgramState::WAIT_NEXT_CYCLE);
+                break;
+            }
+            //
+            switch (checkValidity())
+            {
+                case RecordValidity::VALID:
+                    publishSource = PublishSource::BUFFERED_RECORD;
+                    setState(ProgramState::PUBLISH_DATA);
+                    break;
+
+                case RecordValidity::KEEP:
+                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                    break;
+
+                case RecordValidity::DISCARD:
+                    LOG_WARN("Buffered record cannot be reconstructed. Discarding.");
+                    // Invalid records must be removed, otherwise
+                    // they would block the buffer permanently
+                    removeOldestRecord();
+                    setState(ProgramState::LOAD_BUFFERED_RECORD);
+                    break;
+            }
+            break;
+        /*****************************************************
+        * STATE: PUBLISH_DATA
+        * Publishes the currently prepared telemetry payload.
+        * After a successful publish, buffered records are
+        * removed and the next available record is prepared.
+        *****************************************************/
+        case ProgramState::PUBLISH_DATA:
+
+            // Verify connectivity and attempt MQTT publication
+            if (getWiFiConnectionStatus() &&
+                getMqttConnectionStatus() &&
+                mqttPublish(getDeviceId(), getTelemetry()))
+            {
+                LOG_INFO("Telemetry data published successfully.");
+
+                // Remove the record only if the published data
+                // originated from the persistent buffer
+                if (publishSource == PublishSource::BUFFERED_RECORD)
+                {
+                    LOG_INFO("Removing published record from buffer.");
+                    removeOldestRecord();
+                }
+
+                // Publish the next buffered record, if available
+                if (!isBufferEmpty())
+                {
+                    setState(ProgramState::LOAD_BUFFERED_RECORD);
+                }
+                else
+                {
+                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                }
+            }
+            else
+            {
+                LOG_WARN("Failed to publish telemetry data.");
+
+                // Store a new measurement if its initial publish failed
+                if (publishSource == PublishSource::CURRENT_MEASUREMENT)
+                {
+                    setState(ProgramState::BUFFER_DATA);
+                }
+                else
+                {
+                    // The historical record remains in the buffer
+                    // and can be retried during the next cycle
+                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                }
             }
             break;
 
@@ -246,12 +323,7 @@ void runStateMachine()
 
             mqttLoop();
 
-            if (!isAlarmActive())
-            {
-                setIndicatorState(IndicatorState::MQTT_ONLINE);
-            }
-
-            if (millis() - stateStartTime >= TELEMETRY_INTERVAL_MS)
+            if (millis() - stateStartTime >= (CYCLE_INTERVAL_SEC * 1000UL))
             {
                 if (!getWiFiConnectionStatus())
                 {

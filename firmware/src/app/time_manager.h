@@ -3,7 +3,7 @@
 #include "stdint.h"
 
 void initTimeManager();
-bool isTimeValid();
+bool isTimeAvailable();
 bool forceTimeSync();
 bool isTimeSyncRequired();
 uint32_t getCurrentTimestamp();

@@ -23,8 +23,8 @@ bool readOldestRecord(MeasurementRecord& record);
 bool removeOldestRecord();
 
 // Status
-bool isEmpty();
-bool isFull();
+bool isBufferEmpty();
+bool isBufferFull();
 uint16_t getRecordCount();
 uint32_t getOverflowCount();
 bool resetOverflowCount();

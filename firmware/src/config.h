@@ -38,8 +38,7 @@ constexpr uint8_t SHT31_ADDR = 0x44;
 // ==================================================
 
 constexpr uint32_t SERIAL_MONITOR_WAIT_MS = 10000;
-constexpr uint32_t CYCLE_INTERVAL_SEC     = 15;
-constexpr uint32_t TELEMETRY_INTERVAL_MS  = 10000;
+constexpr uint32_t CYCLE_INTERVAL_SEC     = 60;
 constexpr uint32_t WATCHDOG_TIMEOUT_SECONDS = 30;
 
 // ==================================================
@@ -74,6 +73,9 @@ constexpr char NTP_SERVER[] = "pool.ntp.org";
 
 constexpr uint32_t NTP_SYNC_INTERVAL_SECONDS = 86400; // 24 h
 constexpr uint32_t NTP_SYNC_TIMEOUT_MS       = 10000; // 10 s
+// Minimum plausible Unix timestamp.
+// Values below this are treated as relative timestamps.
+constexpr uint32_t VALID_TIMESTAMP_VALUE     = 1767222000; //01.01.2026 00:00 Uhr
 
 
 // ==================================================
@@ -115,4 +117,4 @@ constexpr uint16_t SAMPLE_DELAY_MS = 2;
 // Measurement buffer configuration
 // ==================================================
 
-constexpr uint16_t MEASUREMENT_BUFFER_SIZE = 5;
+constexpr uint16_t MEASUREMENT_BUFFER_SIZE = 50;

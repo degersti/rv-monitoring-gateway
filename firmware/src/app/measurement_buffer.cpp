@@ -216,7 +216,7 @@ bool initBuffer()
 bool pushRecord(const MeasurementRecord& record)
 {
     LOG_INFO("Storing measurement record in buffer at index %u", metaData.writeIndex);
-    if (isFull())
+    if (isBufferFull())
     {
         // Discard oldest record.
         LOG_WARN("Measurement buffer full. Overwriting oldest record.");
@@ -251,7 +251,7 @@ bool pushRecord(const MeasurementRecord& record)
  *************************************************/
 bool readOldestRecord(MeasurementRecord& record)
 {
-    if (isEmpty())
+    if (isBufferEmpty())
     {
         return false;
     }
@@ -273,7 +273,7 @@ bool readOldestRecord(MeasurementRecord& record)
  *************************************************/
 bool removeOldestRecord()
 {
-    if (isEmpty())
+    if (isBufferEmpty())
     {
         return false;
     }
@@ -292,7 +292,7 @@ bool removeOldestRecord()
  *              false - Buffer has free space
  * Notes:       None
  *************************************************/
-bool isFull()
+bool isBufferFull()
 {
     return metaData.recordCount >= MEASUREMENT_BUFFER_SIZE;
 }
@@ -305,7 +305,7 @@ bool isFull()
  *              false - Buffer contains records
  * Notes:       None
  *************************************************/
-bool isEmpty()
+bool isBufferEmpty()
 {
     return metaData.recordCount == 0;
 }

@@ -68,6 +68,61 @@ char* getTelemetry(void)
     return payload;
 }
 /*************************************************
+ * Function:    hasValidTimestamp
+ * Description: Checks whether the current
+ *              timestamp is already a valid
+ *              Unix timestamp.
+ * Parameters:  None
+ * Returns:     True if the timestamp is valid,
+ *              otherwise false.
+ * Notes:       Relative timestamps are identified
+ *              by values below
+ *              VALID_TIMESTAMP_VALUE.
+ *************************************************/
+static bool hasValidTimestamp(void)
+{
+    return data.timestamp >= VALID_TIMESTAMP_VALUE;
+}
+/*************************************************
+ * Function:    checkValidity
+ * Description: Validates the current measurement
+ *              record and updates a relative
+ *              timestamp when possible.
+ * Parameters:  None
+ * Returns:     RecordValidity indicating whether
+ *              the record is valid, should be
+ *              retained for later processing or
+ *              discarded.
+ * Notes:       Relative timestamps are converted
+ *              to absolute Unix timestamps when
+ *              NTP time is available and the
+ *              record belongs to the current
+ *              boot epoch.
+ *************************************************/
+RecordValidity checkValidity(void)
+{
+    if (hasValidTimestamp())
+    {
+        return RecordValidity::VALID;
+    }
+
+    if (data.bootEpochId != getBootEpochId())
+    {
+        return RecordValidity::DISCARD;
+    }
+
+    if (!isTimeAvailable())
+    {
+        return RecordValidity::KEEP;
+    }
+
+    data.timestamp = reconstructTimestamp(data.timestamp);
+
+    return hasValidTimestamp()
+        ? RecordValidity::VALID
+        : RecordValidity::DISCARD;
+}
+/*************************************************
  * Function:    updateSensorData
  * Description: Collects the latest sensor and
  *              alarm values from all hardware
