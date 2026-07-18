@@ -112,28 +112,20 @@ RecordValidity checkValidity(void)
 
     if (hasValidTimestamp())
     {
-        LOG_DEBUG("Buffered record validity: VALID");
+        LOG_INFO("Record status: VALID");
         return RecordValidity::VALID;
     }
 
     if (data.bootEpochId != currentBootEpochId)
     {
-        LOG_WARN(
-            "Discarding buffered record: bootEpochId=%lu, currentBootEpochId=%lu, timestamp=%lu",
-            data.bootEpochId,
-            currentBootEpochId,
-            data.timestamp
-        );
+        LOG_INFO("Record status: DISCARD [invalid bootEpochId]");
 
         return RecordValidity::DISCARD;
     }
 
     if (!isTimeAvailable())
     {
-        LOG_DEBUG(
-            "Buffered record validity: KEEP "
-            "(waiting for time synchronization)"
-        );
+        LOG_INFO("Record status: KEEP [time not available]");
 
         return RecordValidity::KEEP;
     }
@@ -142,25 +134,18 @@ RecordValidity checkValidity(void)
     data.timestamp = reconstructTimestamp(relativeTimestamp);
 
     LOG_DEBUG(
-        "Timestamp reconstructed: bootEpochId=%lu, relative=%lu, absolute=%lu",
-        data.bootEpochId,
+        "Timestamp reconstructed: relative=%lu, absolute=%lu",
         relativeTimestamp,
         data.timestamp
     );
 
     if (hasValidTimestamp())
     {
-        LOG_DEBUG("Buffered record validity: VALID");
+        LOG_INFO("Record status: VALID");
         return RecordValidity::VALID;
     }
 
-    LOG_WARN(
-        "Discarding buffered record: timestamp reconstruction failed "
-        "(bootEpochId=%lu, relative=%lu, reconstructed=%lu)",
-        data.bootEpochId,
-        relativeTimestamp,
-        data.timestamp
-    );
+    LOG_INFO("Record status: DISCARD [timestamp reconstruction failed]");
 
     return RecordValidity::DISCARD;
 }
@@ -187,8 +172,10 @@ bool updateData(void)
     success &= readEnvironmentalValues(data);
     readAlarmPins(data);
 
+    LOG_INFO("Record status: UPDATED");
+
     LOG_DEBUG(
-        "Measurement updated: "
+        "Record details: "
         "bootEpochId=%lu, "
         "timestamp=%lu (%s), "
         "houseBattery=%.2f V, "

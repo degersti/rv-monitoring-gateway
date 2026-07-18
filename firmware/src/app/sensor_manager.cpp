@@ -53,14 +53,14 @@ bool initSensorManager(void)
     if (!sht31.begin(SHT31_ADDR))
     {
         LOG_ERROR(
-            "SHT31 initialization failed: address=0x%02X",
+            "Initializing sensor: FAILED [type=SHT31, address=0x%02X]",
             SHT31_ADDR
         );
         return false;
     }
 
     LOG_INFO(
-        "Sensor initialized: type=SHT31, address=0x%02X",
+        "Initializing sensor: SUCCESS [type=SHT31, address=0x%02X]",
         SHT31_ADDR
     );
 

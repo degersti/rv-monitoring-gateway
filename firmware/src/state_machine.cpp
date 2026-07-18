@@ -196,7 +196,6 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::CREATE_RECORD:
 
-            LOG_INFO("Collecting data...");
             if (!updateData())
             {
                 LOG_ERROR("Data update failed.");
@@ -244,7 +243,6 @@ void runStateMachine()
                     break;
 
                 case RecordValidity::DISCARD:
-                    LOG_WARN("Buffered record cannot be reconstructed. Discarding.");
                     // Invalid records must be removed, otherwise
                     // they would block the buffer permanently
                     removeOldestRecord();
@@ -265,7 +263,7 @@ void runStateMachine()
             // Abort publishing if no Wi-Fi connection is available
             if (!getWiFiConnectionStatus())
             {
-                LOG_WARN("MQTT publish skipped: Wi-Fi not connected.");
+                LOG_INFO("MQTT publish: SKIPPED [WiFi not connected]");
 
                 if (publishSource == PublishSource::CURRENT_MEASUREMENT)
                 {
@@ -282,7 +280,7 @@ void runStateMachine()
             // Abort publishing if the MQTT client is not connected
             if (!getMqttConnectionStatus())
             {
-                LOG_WARN("MQTT publish skipped: MQTT not connected.");
+                LOG_INFO("MQTT publish: PUBLISH_SKIPPED [MQTT not connected]");
 
                 if (publishSource == PublishSource::CURRENT_MEASUREMENT)
                 {
@@ -300,13 +298,13 @@ void runStateMachine()
             if (publishSource == PublishSource::CURRENT_MEASUREMENT)
             {
                 LOG_INFO(
-                    "MQTT publish: source=CURRENT, timestamp=%lu.",
+                    "MQTT publish: START [source=CURRENT, timestamp=%lu]",
                     getCurrentData().timestamp);
             }
             else
             {
                 LOG_INFO(
-                    "MQTT publish: source=BUFFER, timestamp=%lu, buffered=%u.",
+                    "MQTT publish: START [source=BUFFER, timestamp=%lu, buffered=%u]",
                     getCurrentData().timestamp,
                     getRecordCount());
             }
@@ -314,7 +312,7 @@ void runStateMachine()
             // Attempt to publish the prepared telemetry payload
             if (!mqttPublish(getDeviceId(), getTelemetry()))
             {
-                LOG_WARN("MQTT publish failed.");
+                LOG_INFO("MQTT publish: FAILED");
 
                 // Preserve the record for a later retry
                 if (publishSource == PublishSource::CURRENT_MEASUREMENT)
@@ -329,21 +327,17 @@ void runStateMachine()
                 break;
             }
 
-            LOG_INFO("MQTT publish successful.");
+            LOG_INFO("MQTT publish: SUCCESS");
 
             // Remove a buffered record only after successful publication
             if (publishSource == PublishSource::BUFFERED_RECORD)
             {
                 if (!removeOldestRecord())
                 {
-                    LOG_ERROR("Failed to remove published record from buffer.");
                     setState(ProgramState::ERROR);
                     break;
                 }
 
-                LOG_DEBUG(
-                    "Published record removed from buffer: remaining=%u.",
-                    getRecordCount());
             }
 
             // Continue with the next buffered record, if available
@@ -399,15 +393,9 @@ void runStateMachine()
          * Synchronizes the system clock with an NTP server.
          *****************************************************/
         case ProgramState::SYNC_TIME:
-            LOG_INFO("Synchronizing system time with NTP server");
-            if (forceTimeSync())
-            {
-                LOG_INFO("NTP synchronization successful");   
-            }
-            else
-            {
-                LOG_WARN("NTP synchronization failed");
-            }
+        
+            forceTimeSync();
+      
             setState(ProgramState::CONNECT_MQTT);
             break;
         /*****************************************************

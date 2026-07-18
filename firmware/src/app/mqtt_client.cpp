@@ -48,7 +48,11 @@ static bool mqttInitialized = false;
  *************************************************/
 void initMqtt(Client& client)
 {
-    LOG_INFO("Initializing MQTT client");
+    LOG_INFO("Initializing MQTT client: host=%s, port=%d, buffer=%u",
+         mqtt_server,
+         mqtt_port,
+         MQTT_BUFFER_SIZE);
+
     mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
     mqttClient.setClient(client);
     mqttClient.setServer(mqtt_server, mqtt_port);
@@ -72,7 +76,9 @@ void initMqtt(Client& client)
  *************************************************/
 static bool tryMqttConnect(const char* deviceId)
 {
-    LOG_INFO("Connecting to HiveMQ");
+    LOG_INFO("MQTT status: CONNECTING_TO_BROKER [host=%s, port=%d]",
+         mqtt_server,
+         mqtt_port);
 
     char clientId[32];
 
@@ -84,7 +90,7 @@ static bool tryMqttConnect(const char* deviceId)
 
     if (mqttClient.connect(clientId, mqtt_user, mqtt_password))
     {
-        LOG_INFO("HiveMQ connected");
+        LOG_INFO("MQTT status: CONNECTED [clientId=%s]", clientId);
 
         char topic[64];
 
@@ -95,13 +101,13 @@ static bool tryMqttConnect(const char* deviceId)
 
         mqttClient.publish(topic, "{\"status\":\"online\"}");
 
-        LOG_INFO("Status message sent");
+        LOG_DEBUG("MQTT publishing details: topic=%s, qos=0, retained=false", topic);
 
         mqttState = MqttConnectionState::CONNECTED;
         return true;
     }
 
-    LOG_WARN("HiveMQ connection failed (state=%d)", mqttClient.state());
+    LOG_DEBUG("MQTT publishing details: state=%d", mqttClient.state());
 
     mqttState = MqttConnectionState::FAILED;
     lastReconnectAttempt = millis();
@@ -237,27 +243,18 @@ bool getMqttConnectionStatus(void)
  *************************************************/
 bool mqttPublish(const char* deviceId, const char* payload)
 {
-    LOG_DEBUG("Publishing telemetry data to MQTT broker");
-    LOG_DEBUG("Telemetry payload: %s", payload);
     if (!mqttClient.connected())
     {
-        LOG_WARN("Payload message failed: MQTT disconnected");
         return false;
     }
 
     String topic = String("gateway/") + deviceId + "/measurement";
 
-    bool result = mqttClient.publish(topic.c_str(), payload);
+    LOG_DEBUG(
+        "MQTT publishing details: topic=%s, qos=0, retained=false",
+        topic.c_str());
 
-    if (result)
-    {
-        LOG_INFO("Payload message sent");
-    }
-    else
-    {
-        LOG_WARN("Payload message failed");
-        
-    }
+    LOG_DEBUG("MQTT payload: %s", payload);
 
-    return result;
+    return mqttClient.publish(topic.c_str(), payload);
 }

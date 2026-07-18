@@ -41,20 +41,18 @@ static void startWifiConnection(void)
     if (wifiConnectionAttempt == 1)
     {
         LOG_INFO(
-            "Connecting to WiFi: SSID=%s, timeout=%.1f s",
+            "WiFi status: CONNECTING [SSID=%s, timeout=%.1f s]",
             wifi_ssid,
             WIFI_CONNECT_TIMEOUT_MS / 1000.0f);
     }
     else
     {
         LOG_INFO(
-            "WiFi reconnect attempt %lu",
+            "WiFi status: CONNECTING [attempt=%lu]",
             static_cast<unsigned long>(wifiConnectionAttempt));
     }
 
-    LOG_DEBUG(
-        "WiFi connection attempt: %lu",
-        static_cast<unsigned long>(wifiConnectionAttempt));
+
 
     WiFi.disconnect(true);
     delay(10);
@@ -106,7 +104,7 @@ WiFiConnectionState processWifiConnection(void)
             const uint32_t elapsedTime = millis() - connectStartTime;
 
             LOG_INFO(
-                "WiFi connected: SSID=%s, attempt=%lu, elapsed=%.1f s",
+                "WiFi status: CONNECTING [SSID=%s, attempt=%lu, elapsed=%.1f s]",
                 wifi_ssid,
                 static_cast<unsigned long>(wifiConnectionAttempt),
                 elapsedTime / 1000.0f);
@@ -123,10 +121,6 @@ WiFiConnectionState processWifiConnection(void)
 
     if (wifiState == WiFiConnectionState::CONNECTED)
     {
-        LOG_WARN(
-            "WiFi connection lost: status=%s",
-            getWifiStatusName(WiFi.status()));
-
         wifiState = WiFiConnectionState::IDLE;
     }
 
@@ -153,10 +147,10 @@ WiFiConnectionState processWifiConnection(void)
             const uint32_t elapsedTime = now - connectStartTime;
             const wl_status_t status = WiFi.status();
 
-            LOG_WARN(
-                "WiFi connection failed: attempt=%lu, status=%s, elapsed=%.1f s",
-                static_cast<unsigned long>(wifiConnectionAttempt),
+            LOG_DEBUG(
+                "WiFi connection failed: reason=%s attempt=%lu, elapsed=%.1f s",
                 getWifiStatusName(status),
+                static_cast<unsigned long>(wifiConnectionAttempt),
                 elapsedTime / 1000.0f);
 
             WiFi.disconnect(true);
@@ -186,7 +180,8 @@ void disconnectWifi(void)
     lastRetryTime = 0;
     wifiConnectionAttempt = 0;
 
-    LOG_DEBUG("WiFi connection handling reset");
+    LOG_DEBUG("WiFi network details: status=%s",
+        getWifiStatusName(WiFi.status()));
 }
 
 /*************************************************

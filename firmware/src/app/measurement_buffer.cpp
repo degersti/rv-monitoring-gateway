@@ -246,11 +246,11 @@ bool pushRecord(const MeasurementRecord& record)
         }
     }
 
-    LOG_INFO("Storing measurement record at index=%u", targetIndex);
+    LOG_INFO("Record status: STORRING [index=%u]", targetIndex);
 
     if (!writeToFlash(targetIndex, record))
     {
-        LOG_ERROR("Failed to store measurement record at index=%u", targetIndex);
+        LOG_DEBUG("Buffer write to flash failed");
         return false;
     }
 
@@ -277,7 +277,7 @@ bool pushRecord(const MeasurementRecord& record)
 
     LOG_DEBUG(
         "Buffer push complete: writeIndex=%u, readIndex=%u, "
-        "count=%u/%u, overflow=%lu",
+        "count=%u/%u",
         metaData.writeIndex,
         metaData.readIndex,
         metaData.recordCount,
@@ -301,19 +301,19 @@ bool readOldestRecord(MeasurementRecord& record)
 {
     if (isBufferEmpty())
     {
-        LOG_DEBUG("Cannot read buffered record: buffer is empty");
+        LOG_DEBUG("Failed to load record because buffer is empty]");
         return false;
     }
 
     if (!readFromFlash(metaData.readIndex, record))
     {
-        LOG_ERROR("Failed to read buffered record at index=%u",
+        LOG_DEBUG("Failed to load record at index=%u]",
                   metaData.readIndex);
         return false;
     }
 
-    LOG_DEBUG(
-        "Buffered record loaded: index=%u, timestamp=%lu, count=%u/%u",
+    LOG_INFO(
+        "Record status: LOADED [index=%u, timestamp=%lu, count=%u/%u]",
         metaData.readIndex,
         static_cast<unsigned long>(record.timestamp),
         metaData.recordCount,
@@ -336,7 +336,7 @@ bool removeOldestRecord()
 {
     if (isBufferEmpty())
     {
-        LOG_WARN("Cannot remove buffered record: buffer is already empty");
+        LOG_DEBUG("Cannot remove buffered record: buffer is already empty");
         return false;
     }
 
@@ -364,7 +364,7 @@ bool removeOldestRecord()
 
     if (isBufferEmpty())
     {
-        LOG_INFO("Measurement buffer empty");
+        LOG_INFO("Buffer status: EMPTY");
     }
 
     return true;
