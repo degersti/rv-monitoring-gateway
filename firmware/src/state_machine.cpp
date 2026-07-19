@@ -88,6 +88,7 @@ void runStateMachine()
          * Entry state after reset or power-up.
          *****************************************************/
         case ProgramState::BOOT:
+        {
             setIndicatorState(IndicatorState::BOOT);
             if(isDebugModeEnabled() && !isSerialInitialized())
             {                 
@@ -100,12 +101,13 @@ void runStateMachine()
             }
             setState(ProgramState::INIT_SYSTEM);
             break;
-
+        }
         /*****************************************************
          * STATE: INIT_SYSTEM
          * Initializes all system modules and peripherals.
          *****************************************************/
         case ProgramState::INIT_SYSTEM:
+        {
             LOG_INFO("Initializing system modules");
             initTimeManager();
             if(!initBuffer())
@@ -124,12 +126,82 @@ void runStateMachine()
             {
                 setState(ProgramState::ERROR);
             }
-            if(isAlarmActive)
+            break;
+        }
+        /*****************************************************
+         * STATE: SYNC_TIME
+         * Synchronizes the system clock with an NTP server.
+         *****************************************************/
+        case ProgramState::SYNC_TIME:
+        {
+            forceTimeSync();
+            setState(ProgramState::CONNECT_MQTT);
+            break;
+        }
+        /*****************************************************
+         * STATE: CREATE_RECORD
+         * Collects sensor data and updates the current 
+         * measurement record.
+         *****************************************************/
+        case ProgramState::CREATE_RECORD:
+        {   
+            if (!updateData())
             {
-                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+                LOG_ERROR("Data update failed.");
+                setState(ProgramState::ERROR);
+                break;
+            }
+            else
+            {
+                publishSource = PublishSource::CURRENT_MEASUREMENT;
+            }
+
+            if(isTimeAvailable())
+            {
+                setState(ProgramState::PUBLISH_DATA);
+            }
+            else
+            {
+                setState(ProgramState::BUFFER_DATA);
             }
             break;
+        }
         /*****************************************************
+         * STATE: LOAD_BUFFERED_RECORD
+         * Loads and validates the oldest buffered measurement
+         * and prepares its telemetry payload for publication.
+         *****************************************************/
+        case ProgramState::LOAD_BUFFERED_RECORD:
+        {
+            // Load the oldest buffered record.
+            // Leave if the buffer is empty.
+            if (!readOldestRecord(getCurrentData()))
+            {
+                setState(ProgramState::POWER_DECISION);
+                break;
+            }
+            //
+            switch (checkValidity())
+            {
+                case RecordValidity::VALID:
+                    publishSource = PublishSource::BUFFERED_RECORD;
+                    setState(ProgramState::PUBLISH_DATA);
+                    break;
+
+                case RecordValidity::KEEP:
+                    setState(ProgramState::POWER_DECISION);
+                    break;
+
+                case RecordValidity::DISCARD:
+                    // Invalid records must be removed, otherwise
+                    // they would block the buffer permanently
+                    removeOldestRecord();
+                    setState(ProgramState::LOAD_BUFFERED_RECORD);
+                    break;
+            }
+            break;
+        }
+         /*****************************************************
          * STATE: CONNECT_WIFI
          * Non-blocking WiFi connection handling.
          *****************************************************/
@@ -162,7 +234,6 @@ void runStateMachine()
             }
             break;
         }
-
         /*****************************************************
          * STATE: CONNECT_MQTT
          * MQTT connection handling with retry timing.
@@ -189,67 +260,6 @@ void runStateMachine()
             }
             break;
         }
-        /*****************************************************
-         * STATE: CREATE_RECORD
-         * Collects sensor data and updates the current 
-         * measurement record.
-         *****************************************************/
-        case ProgramState::CREATE_RECORD:
-
-            if (!updateData())
-            {
-                LOG_ERROR("Data update failed.");
-                setState(ProgramState::ERROR);
-                break;
-            }
-            else
-            {
-                publishSource = PublishSource::CURRENT_MEASUREMENT;
-            }
-
-            if(isTimeAvailable())
-            {
-                setState(ProgramState::PUBLISH_DATA);
-            }
-            else
-            {
-                setState(ProgramState::BUFFER_DATA);
-            }
-            break;
-        /*****************************************************
-         * STATE: LOAD_BUFFERED_RECORD
-         * Loads and validates the oldest buffered measurement
-         * and prepares its telemetry payload for publication.
-         *****************************************************/
-        case ProgramState::LOAD_BUFFERED_RECORD:
-
-            // Load the oldest buffered record.
-            // Leave if the buffer is empty.
-            if (!readOldestRecord(getCurrentData()))
-            {
-                setState(ProgramState::WAIT_NEXT_CYCLE);
-                break;
-            }
-            //
-            switch (checkValidity())
-            {
-                case RecordValidity::VALID:
-                    publishSource = PublishSource::BUFFERED_RECORD;
-                    setState(ProgramState::PUBLISH_DATA);
-                    break;
-
-                case RecordValidity::KEEP:
-                    setState(ProgramState::WAIT_NEXT_CYCLE);
-                    break;
-
-                case RecordValidity::DISCARD:
-                    // Invalid records must be removed, otherwise
-                    // they would block the buffer permanently
-                    removeOldestRecord();
-                    setState(ProgramState::LOAD_BUFFERED_RECORD);
-                    break;
-            }
-            break;
        /*****************************************************
          * STATE: PUBLISH_DATA
          * Publishes the prepared telemetry record.
@@ -259,7 +269,7 @@ void runStateMachine()
          * in the persistent buffer for a later retry.
          *****************************************************/
         case ProgramState::PUBLISH_DATA:
-
+        {
             // Abort publishing if no Wi-Fi connection is available
             if (!getWiFiConnectionStatus())
             {
@@ -271,7 +281,7 @@ void runStateMachine()
                 }
                 else
                 {
-                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                    setState(ProgramState::POWER_DECISION);
                 }
 
                 break;
@@ -288,7 +298,7 @@ void runStateMachine()
                 }
                 else
                 {
-                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                    setState(ProgramState::POWER_DECISION);
                 }
 
                 break;
@@ -321,12 +331,11 @@ void runStateMachine()
                 }
                 else
                 {
-                    setState(ProgramState::WAIT_NEXT_CYCLE);
+                    setState(ProgramState::POWER_DECISION);
                 }
 
                 break;
             }
-
             LOG_INFO("MQTT publish: SUCCESS");
 
             // Remove a buffered record only after successful publication
@@ -339,7 +348,6 @@ void runStateMachine()
                 }
 
             }
-
             // Continue with the next buffered record, if available
             if (!isBufferEmpty())
             {
@@ -347,20 +355,55 @@ void runStateMachine()
             }
             else
             {
-                setState(ProgramState::WAIT_NEXT_CYCLE);
+                setState(ProgramState::POWER_DECISION);
             }
-
             break;
+        }
         /*****************************************************
          * STATE: BUFFER_DATA
          * Stores telemetry data locally while network
          * communication is unavailable.
          *****************************************************/
         case ProgramState::BUFFER_DATA:
+        {
             pushRecord(getCurrentData());
-            setState(ProgramState::WAIT_NEXT_CYCLE);
+            setState(ProgramState::POWER_DECISION);
             break;
-
+        }
+        /*****************************************************
+         * STATE: POWER_DECISION
+         * Decides whether the gateway remains awake or enters
+         * deep sleep until the next measurement/transmission.
+         *****************************************************/
+        case ProgramState::POWER_DECISION:
+        {
+            if(isAlarmActive())
+            {
+                LOG_INFO("Alarm input status: ACTIVE (action=STAY_AWAKE)");
+                LOG_DEBUG("Timer: %u min", CYCLE_INTERVAL_MIN);
+                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+                setState(ProgramState::WAIT_NEXT_CYCLE);
+            }
+            else
+            {
+                LOG_INFO("Alarm input status: INACTIVE (action=DEEP_SLEEP)");
+                prepareDeepSleep();
+                setState(ProgramState::ENTER_DEEP_SLEEP);
+            }
+            break;
+        }
+        /*****************************************************
+         * STATE: ENTER_DEEP_SLEEP
+         * Configures all wake-up sources, stores required
+         * runtime information and enters deep sleep.
+         *****************************************************/
+        case ProgramState::ENTER_DEEP_SLEEP:
+        {
+            setIndicatorState(IndicatorState::OFF);
+            updateStatusIndicator();
+            enterDeepSleep();
+            break;
+        }
         /*****************************************************
          * STATE: WAIT_NEXT_CYCLE
          * Idle state between telemetry transmissions.
@@ -368,10 +411,9 @@ void runStateMachine()
          * the next measurement interval.
          *****************************************************/
         case ProgramState::WAIT_NEXT_CYCLE:
-
+        {
             mqttLoop();
-
-            if (millis() - stateStartTime >= (CYCLE_INTERVAL_SEC * 1000UL))
+            if (millis() - stateStartTime >= (CYCLE_INTERVAL_MIN * MIN_TO_MS))
             {
                 if (!getWiFiConnectionStatus())
                 {
@@ -388,22 +430,19 @@ void runStateMachine()
                 setState(ProgramState::CREATE_RECORD);
             }
             break;
-        /*****************************************************
-         * STATE: SYNC_TIME
-         * Synchronizes the system clock with an NTP server.
-         *****************************************************/
-        case ProgramState::SYNC_TIME:
-        
-            forceTimeSync();
-      
-            setState(ProgramState::CONNECT_MQTT);
-            break;
+        }
         /*****************************************************
          * STATE: ERROR
          * Critical system error.
          *****************************************************/
         case ProgramState::ERROR:
+        {
+            disconnectWifi();
+            disconnectMqtt();
+            delay(100);        
             setIndicatorState(IndicatorState::ERROR_ACTIVE);
+            updateStatusIndicator();
             break;
+        }
     }
 }

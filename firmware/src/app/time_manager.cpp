@@ -171,10 +171,10 @@ bool isTimeAvailable()
     relativeTimeAtLastSync = timeBeforeSync;
     timeAvailable = true;
 
-    LOG_INFO("NTP synchronization: SUCCESS [previousSystemTime=%lu, NewSystemTime=%lu]",
+    LOG_INFO("NTP synchronization: SUCCESS [previousSystemTime=%lu, newSystemTime=%lu]",
                 (unsigned long)timeBeforeSync,
                 (unsigned long)lastNtpSyncTimestamp);
-    LOG_INFO("Time status: ABSOLUT [source=NTP]"); 
+    LOG_INFO("Time status: ABSOLUTE [source=NTP]"); 
 
     return true;
 }

@@ -1,16 +1,23 @@
 #pragma once
 
-enum class ProgramState {
+enum class ProgramState
+{
     BOOT,
     INIT_SYSTEM,
+
+    SYNC_TIME,
     CREATE_RECORD,
     LOAD_BUFFERED_RECORD,
+
     CONNECT_WIFI,
     CONNECT_MQTT,
     PUBLISH_DATA,
     BUFFER_DATA,
+
+    POWER_DECISION,
     WAIT_NEXT_CYCLE,
-    SYNC_TIME,
+    ENTER_DEEP_SLEEP,
+
     ERROR
 };
 

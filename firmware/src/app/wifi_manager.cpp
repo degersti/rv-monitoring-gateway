@@ -97,14 +97,15 @@ WiFiConnectionState processWifiConnection(void)
 {
     const uint32_t now = millis();
 
+    // Connection established
     if (WiFi.status() == WL_CONNECTED)
     {
         if (wifiState != WiFiConnectionState::CONNECTED)
         {
-            const uint32_t elapsedTime = millis() - connectStartTime;
+            const uint32_t elapsedTime = now - connectStartTime;
 
             LOG_INFO(
-                "WiFi status: CONNECTING [SSID=%s, attempt=%lu, elapsed=%.1f s]",
+                "WiFi status: CONNECTED [SSID=%s, attempt=%lu, elapsed=%.1f s]",
                 wifi_ssid,
                 static_cast<unsigned long>(wifiConnectionAttempt),
                 elapsedTime / 1000.0f);
@@ -119,17 +120,20 @@ WiFiConnectionState processWifiConnection(void)
         return wifiState;
     }
 
+    // Connection lost after previously being connected
     if (wifiState == WiFiConnectionState::CONNECTED)
     {
         wifiState = WiFiConnectionState::IDLE;
     }
 
+    // Start a new connection attempt
     if (wifiState == WiFiConnectionState::IDLE)
     {
         startWifiConnection();
         return wifiState;
     }
 
+    // Retry after the configured retry interval
     if (wifiState == WiFiConnectionState::FAILED)
     {
         if (now - lastRetryTime >= WIFI_RETRY_INTERVAL_MS)
@@ -140,6 +144,7 @@ WiFiConnectionState processWifiConnection(void)
         return wifiState;
     }
 
+    // Abort the current attempt if the timeout expires
     if (wifiState == WiFiConnectionState::CONNECTING)
     {
         if (now - connectStartTime >= WIFI_CONNECT_TIMEOUT_MS)
@@ -147,8 +152,8 @@ WiFiConnectionState processWifiConnection(void)
             const uint32_t elapsedTime = now - connectStartTime;
             const wl_status_t status = WiFi.status();
 
-            LOG_DEBUG(
-                "WiFi connection failed: reason=%s attempt=%lu, elapsed=%.1f s",
+            LOG_WARN(
+                "WiFi status: CONNECTION_FAILED [reason=%s, attempt=%lu, elapsed=%.1f s]",
                 getWifiStatusName(status),
                 static_cast<unsigned long>(wifiConnectionAttempt),
                 elapsedTime / 1000.0f);

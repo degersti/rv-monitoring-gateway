@@ -177,9 +177,10 @@ void disconnectMqtt(void)
 {
     if (mqttClient.connected())
     {
-        mqttClient.disconnect();
+        mqttClient.disconnect(); 
     }
-
+    LOG_INFO("MQTT status: %s",
+         mqttClient.connected() ? "CONNECTED" : "DISCONNECTED");  
     mqttState = MqttConnectionState::IDLE;
     lastReconnectAttempt = 0;
 }

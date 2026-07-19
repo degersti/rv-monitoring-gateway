@@ -234,7 +234,7 @@ void updateStatusIndicator(void)
             break;
 
         case IndicatorState::ALARM_ACTIVE:
-            setRgb(255, 0, 0);
+            blinkRgb(255, 0, 0, 1000);
             break;
 
         case IndicatorState::ERROR_ACTIVE:
