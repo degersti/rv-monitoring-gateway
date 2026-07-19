@@ -27,22 +27,23 @@ The project is currently in an early development phase and follows an incrementa
 - [x] Historical data storage
 - [x] Time management
 - [x] Deep Sleep support
-- [ ] System state machine
-- [ ] Watchdog
+- [x] System state machine
+- [x] Watchdog
 - [ ] Firmware integration
 - [ ] Prototype validation
 
 ### Phase 2 – Enhanced Connectivity
 
 - Cellular communication (LTE / NB-IoT)
-- User configurable alarm thresholds
-- Simplified device onboarding
+- MQTT using TLS, QoS 1/2 and Websockets
+- Bluetooth configuration
 - Improved device management
 - OTA firmware updates
 
 ### Phase 3 – Extended Monitoring
 
 - GPS positioning and geofencing
+- Writing Log and Measurements to SD Card
 - Battery management system integration
 - Solar charge controller integration
 - Shore power monitoring
@@ -75,8 +76,6 @@ The project is currently in an early development phase and follows an incrementa
 ### In Progress
 
 - Firmware integration
-- Central state machine
-- Watchdog implementation
 
 ### Next Milestone
 
