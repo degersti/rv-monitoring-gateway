@@ -69,11 +69,3 @@ For water + smoke, multiply by 2.
 | several | Pin headers | SHT31, debug, optional expansion |
 | several | Jumper wires / hookup wire | Internal wiring |
 
-## Reserved for Future
-
-| Qty | Part | Notes |
-|---:|---|---|
-| 1 | microSD card module | SPI, GPIO10-GPIO13 |
-| 1 | LTE modem module | UART, GPIO16-GPIO18 |
-| 1 | SIM card / antenna | Only if LTE used |
-| 1 | External antenna connector | Future LTE/WiFi considerations |
