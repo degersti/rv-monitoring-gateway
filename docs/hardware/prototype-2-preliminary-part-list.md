@@ -40,3 +40,22 @@ Prototype 2 reuses all components from Prototype 1 and adds the following hardwa
 | 1 | Jumper shunt | Connects +3.3 V to +3V3_SD |
 
 ---
+
+## Debug Interface
+
+| Qty | Part | Notes |
+|---:|---|---|
+| 1 | 2-pin jumper header | Serial debug enable |
+| 1 | Jumper shunt | Pulls GPIO1 LOW to enable serial debug output |
+| 1 | 10 kΩ resistor | External pull-up for GPIO1 |
+
+---
+
+## Configuration Interface
+
+| Qty | Part | Notes |
+|---:|---|---|
+| 1 | Momentary push button (NO) | Configuration button (Bluetooth provisioning / factory reset) |
+| 1 | 10 kΩ resistor | External pull-up for configuration button |
+| 1 | 100 nF ceramic capacitor *(optional)* | Hardware debounce / EMI suppression |
+
