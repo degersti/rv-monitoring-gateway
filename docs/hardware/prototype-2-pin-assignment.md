@@ -19,8 +19,8 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO | Prototype Assignment | Status | Notes |
 |------|----------------------|--------|-------|
 | GPIO0 | Not used | Avoid | Boot / strapping related |
-| GPIO1 | Free | Available | Can be used if needed |
-| GPIO2 | Free | Available | Can be used if needed |
+| **GPIO1** | **Serial Debug Enable** | **Used** | **Active LOW digital input for enabling serial debug output** |
+| **GPIO2** | **Configuration Button** | **Used** | **Bluetooth configuration, factory reset and Deep Sleep wake-up** |
 | GPIO3 | Not used | Avoid | Avoid for prototype stability |
 | **GPIO4** | **House battery voltage** | **Used** | **ADC input** |
 | **GPIO5** | **Engine battery voltage** | **Used** | **ADC input** |
@@ -39,7 +39,7 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | **GPIO18** | **LTE UART RX** | **Used** | **ESP32 RX ← LTE TXD** |
 | GPIO19 | USB D- | Avoid | Native USB |
 | GPIO20 | USB D+ | Avoid | Native USB |
-| **GPIO21** | **SD Card Power Enable** | **Reserved** | **Controls LTE high-side switch** |
+| **GPIO21** | **SD Card Power Enable** | **Reserved** | **Controls future SD high-side power switch** |
 | GPIO26 | Not used | Avoid | Internal Flash / PSRAM |
 | GPIO27 | Not used | Avoid | Internal Flash / PSRAM |
 | GPIO28 | Not used | Avoid | Internal Flash / PSRAM |
@@ -72,8 +72,8 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 3V3                 ----|  ESP32 |--- GND
 3V3                 ----|        |--- U0TXD / GPIO43
 RST                 ----|        |--- U0RXD / GPIO44
-GPIO04 / House ADC  ----|        |--- GPIO01
-GPIO05 / Engine ADC ----|        |--- GPIO02
+GPIO04 / House ADC  ----|        |--- GPIO01 / Serial Debug Enable
+GPIO05 / Engine ADC ----|        |--- GPIO02 / Config Button
 GPIO06 / free       ----|        |--- GPIO42
 GPIO07 / free       ----|        |--- GPIO41 / I2C SDA
 GPIO15 / LTE PWR EN ----|        |--- GPIO40 / I2C SCL
@@ -149,6 +149,33 @@ Input protection and galvanic isolation should be considered for permanent insta
 
 ---
 
+## Serial Debug Enable
+
+GPIO1 is connected to a jumper for enabling serial debug output.
+
+```text
+GPIO1 -> Serial debug enable
+```
+
+---
+
+## Configuration Button
+
+Prototype 2 includes a multifunction configuration button connected to GPIO2.
+
+```text
+GPIO2 -> Configuration button
+```
+
+Functions:
+
+- Wake-up from Deep Sleep
+- Activate Bluetooth provisioning
+- Enter configuration mode
+- Request factory reset
+
+---
+
 ## LTE Interface
 
 Prototype 2 includes a complete LTE interface.
@@ -179,7 +206,7 @@ The SD card supply is routed through a removable jumper.
 
 This allows future replacement of the jumper by an electronic power switch without modifying the remaining hardware.
 
-GPIO14 is reserved for future SD power control.
+GPIO21 is reserved for future SD power control.
 
 ---
 
@@ -211,6 +238,10 @@ Prototype 2 includes:
 - LTE modem
 - SD card
 - LTE power switching
+- SD power switch preparation
+- Configuration button
+- Factory reset
+- Serial debug enable
 - Deep Sleep operation
 - MQTT communication
 - Offline buffering
