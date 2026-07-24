@@ -1,4 +1,4 @@
-# ESP32-S3 Prototype 1 Pin Assignment
+# ESP32-S3 Prototype 1 - Pin Assignment
 
 ## Status
 
