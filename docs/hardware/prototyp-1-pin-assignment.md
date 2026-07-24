@@ -1,8 +1,8 @@
-# ESP32-S3 Prototype Pin Assignment
+# ESP32-S3 Prototype 1 Pin Assignment
 
 ## Status
 
-Draft
+Accepted
 
 ## Purpose
 
