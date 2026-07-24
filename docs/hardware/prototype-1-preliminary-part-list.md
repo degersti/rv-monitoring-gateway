@@ -6,6 +6,8 @@
 |---:|---|---|
 | 1 | ESP32-S3 DevKitC-1 N16R8 | Main controller, WiFi/BLE, USB programming |
 
+---
+
 ## Sensors and Inputs
 
 | Qty | Part | Notes |
@@ -13,6 +15,8 @@
 | 1 | SHT31 breakout board | Temperature and humidity via I2C |
 | 1 | Float switch / water ingress sensor | Digital alarm input |
 | 1 | Smoke detector with relay output | Prefer dry-contact relay output |
+
+---
 
 ## Connctors
 
@@ -24,6 +28,8 @@
 | 4 | Fuse holder | Gateway supply, sensor supply, house sense, engine sense |
 | 4 | TVS diode, unidirectional, 12 V line | Transient protection on onboard supply input |
 
+---
+
 ## Power Input and Supply
 
 | Qty | Part | Notes |
@@ -33,6 +39,8 @@
 | 1 | Electrolytic capacitor, 100 µF / 10 V or 16 V | Output bulk capacitor on 5 V rail |
 | 1 | Ceramic capacitor, 100 nF / 50 V | Input high-frequency decoupling near TSR regulator |
 | 1 | Ceramic capacitor, 100 nF / 16 V or higher | Output high-frequency decoupling near ESP32 / 5 V rail |
+
+---
 
 ## Battery Voltage Measurement
 
@@ -48,6 +56,8 @@ For each battery input:
 
 For two battery inputs, multiply by 2.
 
+---
+
 ## Digital Input Conditioning
 
 For each dry-contact input:
@@ -59,6 +69,8 @@ For each dry-contact input:
 
 For water + smoke, multiply by 2.
 
+---
+
 ## Prototype Carrier Board
 
 | Qty | Part | Notes |
@@ -68,4 +80,14 @@ For water + smoke, multiply by 2.
 | several | Screw terminals | External wiring |
 | several | Pin headers | SHT31, debug, optional expansion |
 | several | Jumper wires / hookup wire | Internal wiring |
+
+---
+
+## Debug Interface
+
+| Qty | Part | Notes |
+|---:|---|---|
+| 1 | 2-pin jumper header | Serial debug enable |
+| 1 | Jumper shunt | Pulls GPIO1 LOW to enable serial debug output |
+| 1 | 10 kΩ resistor | External pull-up for GPIO1 |
 
