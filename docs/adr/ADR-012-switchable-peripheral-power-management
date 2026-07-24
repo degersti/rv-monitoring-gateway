@@ -1,0 +1,163 @@
+# ADR-012: Switchable Peripheral Power Management
+
+## Status
+
+Accepted
+
+## Context
+
+The gateway is designed to achieve the lowest possible current consumption during Deep Sleep. The LTE modem is the largest power consumer, even when placed into its internal low-power mode.
+
+In comparison, the SD card consumes only a small amount of standby current. Implementing a switchable power supply for the SD card in Prototype 2 would significantly increase the hardware complexity while providing only a limited reduction in overall power consumption.
+
+At the same time, the firmware should already be designed in a hardware-independent way so that future hardware revisions can introduce additional power switches without requiring changes to the application logic or state machine.
+
+---
+
+## Decision
+
+### Prototype 2
+
+Only the LTE module shall have a switchable power supply.
+
+The Waveshare SIM7000 HAT continues to be supplied from the existing 5 V rail. A P-channel MOSFET is used as a high-side power switch.
+
+### Circuit
+
+```text
+              +5 V            +5 V
+               |               |
+             100 kΩ            S
+               |            IRF4905 D -------------------- +5V_LTE                               
+               |               G
+               |               |
+               +---------------+
+  ESP32 GPIO                   |
+       |                     470 Ω
+     4.7 kΩ                    |
+       |                       C
+       +------------------- B BC547
+       |                       E
+     100 kΩ                    |
+       |                       |
+      GND                     GND
+```
+
+### Switching Logic
+
+| GPIO | LTE Power |
+|------|-----------|
+| HIGH | ON |
+| LOW | OFF |
+| INPUT / Reset | OFF |
+
+The pull-down resistor on the transistor base ensures that the LTE module remains powered off during reset, boot, and Deep Sleep.
+
+Before removing power, the modem is shut down gracefully in software. Afterwards the UART interface is closed and all related GPIO pins are configured as inputs before disabling the power supply.
+
+---
+
+### SD Card
+
+For Prototype 2 the SD card remains permanently connected to the 3.3 V supply.
+
+The 3.3 V supply is routed through a removable jumper. During Prototype 2 the jumper directly connects the SD card to the main 3.3 V rail.
+
+This provides two advantages:
+
+- The SD card can be completely disconnected for testing.
+- A future hardware revision can replace the jumper with an electronic power switch without requiring changes to the remaining circuit.
+
+Before entering Deep Sleep the firmware still performs the normal shutdown sequence:
+
+- Flush pending data
+- Close all files
+- Call `SD.end()`
+
+The software architecture already provides a dedicated SD power management interface, although no physical power switching is implemented in Prototype 2.
+
+---
+
+## Software Architecture
+
+Peripheral power control shall be abstracted from the application logic and state machine.
+
+The software provides independent logical power control for the LTE modem and the SD card, regardless of whether a physical power switch is present.
+
+For Prototype 2, only the LTE power control is implemented in hardware. The SD card remains permanently powered through the jumper connection.
+
+Future hardware revisions may replace the jumper with an electronic switching stage without requiring changes to the higher-level application logic.
+
+---
+
+## Future PCB Revision
+
+Prototype 2 uses a discrete switching circuit to validate the peripheral power management concept.
+
+The production PCB is expected to introduce an integrated power architecture with dedicated power control for individual peripherals.
+
+Design goals include:
+
+- minimum standby current
+- independent power domains
+- controlled power sequencing
+- protection against back-powering
+- compact implementation
+- improved maintainability
+
+The SD card is expected to become individually switchable in a future hardware revision.
+
+The software architecture is intentionally designed to remain independent of the underlying hardware implementation. Future hardware changes are expected to be limited to the hardware-specific Power Manager implementation.
+
+---
+
+## Rationale
+
+This decision minimizes the hardware complexity of Prototype 2 while targeting the component with the highest power consumption.
+
+At the same time, the complete software power management workflow can already be implemented and verified. This allows the production hardware to adopt a different power architecture without affecting the higher software layers.
+
+---
+
+## Consequences
+
+### Advantages
+
+- Simple hardware implementation
+- Significant reduction of LTE standby current
+- Low component count
+- Existing SD hardware can be reused unchanged
+- Software already supports future hardware revisions
+- Hardware-independent state machine
+
+### Disadvantages
+
+- SD card remains permanently powered
+- SD standby current remains part of the overall Deep Sleep consumption
+- Discrete MOSFET solution provides no integrated protection features
+
+---
+
+## Verification
+
+The following tests shall be performed:
+
+- LTE module is powered off after reset.
+- LTE module can be powered on by the ESP32.
+- LTE module starts reliably.
+- LTE module is shut down gracefully before power removal.
+- UART pins are configured as inputs before power is removed.
+- No supply voltage remains at the LTE module after shutdown.
+- Deep Sleep current is reduced as expected.
+- SD card remains fully functional after repeated sleep cycles.
+- Power Manager API behaves correctly independent of the actual hardware implementation.
+
+---
+
+## Open Issues
+
+- Measure SD card standby current
+- Decide whether SD power switching is worthwhile for the PCB revision
+- Select integrated load switches for the final hardware
+- Design the final PCB power architecture
+- Measure complete Deep Sleep current
