@@ -32,14 +32,14 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO11 | Free | Available | Future expansion |
 | **GPIO12** | **Water ingress sensor** | **Used** | **Digital input / wake-up source** |
 | **GPIO13** | **Smoke alarm input** | **Used** | **Digital input / wake-up source** |
-| **GPIO14** | **SD Power Enable** | **Reserved** | **Future SD power switch** |
+| GPIO14 | Reserved alarm input | Reserved | Digital input / wake-up source |
 | **GPIO15** | **LTE Power Enable** | **Used** | **Controls LTE high-side switch** |
 | **GPIO16** | **LTE DTR** | **Used** | **LTE sleep / wake control** |
 | **GPIO17** | **LTE UART TX** | **Used** | **ESP32 TX → LTE RXD** |
 | **GPIO18** | **LTE UART RX** | **Used** | **ESP32 RX ← LTE TXD** |
 | GPIO19 | USB D- | Avoid | Native USB |
 | GPIO20 | USB D+ | Avoid | Native USB |
-| GPIO21 | Free | Available | Future expansion |
+| **GPIO21** | **SD Card Power Enable** | **Reserved** | **Controls LTE high-side switch** |
 | GPIO26 | Not used | Avoid | Internal Flash / PSRAM |
 | GPIO27 | Not used | Avoid | Internal Flash / PSRAM |
 | GPIO28 | Not used | Avoid | Internal Flash / PSRAM |
@@ -76,7 +76,7 @@ GPIO04 / House ADC  ----|        |--- GPIO01
 GPIO05 / Engine ADC ----|        |--- GPIO02
 GPIO06 / free       ----|        |--- GPIO42
 GPIO07 / free       ----|        |--- GPIO41 / I2C SDA
-GPIO15 / LTE EN     ----|        |--- GPIO40 / I2C SCL
+GPIO15 / LTE PWR EN ----|        |--- GPIO40 / I2C SCL
 GPIO16 / LTE DTR    ----|        |--- GPIO39
 GPIO17 / LTE TX     ----|        |--- GPIO38 / Status LED
 GPIO18 / LTE RX     ----|        |--- GPIO37 / SD CS
@@ -86,9 +86,9 @@ GPIO46 / avoid      ----|        |--- GPIO00 / BOOT
 GPIO09 / free       ----|        |--- GPIO45 / avoid
 GPIO10 / free       ----|        |--- GPIO48 / RGB LED
 GPIO11 / free       ----|        |--- GPIO47 / SD MISO
-GPIO12 / Water      ----|        |--- GPIO21
+GPIO12 / Water      ----|        |--- GPIO21 / SD PWR EN
 GPIO13 / Smoke      ----|        |--- GPIO20 / USB D+
-GPIO14 / SD PWR     ----|        |--- GPIO19 / USB D-
+GPIO14              ----|        |--- GPIO19 / USB D-
 5V0                 ----|        |--- GND
 GND                 ----|        |--- GND
 ```
