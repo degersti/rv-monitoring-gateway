@@ -26,14 +26,14 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | **GPIO5** | **Engine battery voltage** | **Used** | **ADC input** |
 | GPIO6 | Reserved analog input | Reserved | ADC-capable |
 | GPIO7 | Reserved analog input | Reserved | ADC-capable |
-| GPIO8 | Free | Available | Future expansion |
+| **GPIO8** | **LTE Power Enable** | **Used** | **Controls LTE high-side switch** |
 | GPIO9 | Free | Available | Future expansion |
 | GPIO10 | Free | Available | Future expansion |
 | GPIO11 | Free | Available | Future expansion |
 | **GPIO12** | **Water ingress sensor** | **Used** | **Digital input / wake-up source** |
 | **GPIO13** | **Smoke alarm input** | **Used** | **Digital input / wake-up source** |
 | GPIO14 | Reserved alarm input | Reserved | Digital input / wake-up source |
-| **GPIO15** | **LTE Power Enable** | **Used** | **Controls LTE high-side switch** |
+| **GPIO15** | **LTE PWR** | **Used** | **???** |
 | **GPIO16** | **LTE DTR** | **Used** | **LTE sleep / wake control** |
 | **GPIO17** | **LTE UART TX** | **Used** | **ESP32 TX → LTE RXD** |
 | **GPIO18** | **LTE UART RX** | **Used** | **ESP32 RX ← LTE TXD** |
@@ -76,11 +76,11 @@ GPIO04 / House ADC  ----|        |--- GPIO01 / Serial Debug Enable
 GPIO05 / Engine ADC ----|        |--- GPIO02 / Config Button
 GPIO06 / free       ----|        |--- GPIO42
 GPIO07 / free       ----|        |--- GPIO41 / I2C SDA
-GPIO15 / LTE PWR EN ----|        |--- GPIO40 / I2C SCL
+GPIO15 / LTE PWR    ----|        |--- GPIO40 / I2C SCL
 GPIO16 / LTE DTR    ----|        |--- GPIO39
 GPIO17 / LTE TX     ----|        |--- GPIO38 / Status LED
 GPIO18 / LTE RX     ----|        |--- GPIO37 / SD CS
-GPIO08 / free       ----|        |--- GPIO36 / SD MOSI
+GPIO08 / LTE PWR EN ----|        |--- GPIO36 / SD MOSI
 GPIO03 / avoid      ----|        |--- GPIO35 / SD SCK
 GPIO46 / avoid      ----|        |--- GPIO00 / BOOT
 GPIO09 / free       ----|        |--- GPIO45 / avoid
@@ -181,13 +181,14 @@ Functions:
 Prototype 2 includes a complete LTE interface.
 
 ```text
-GPIO15 -> LTE Power Enable
+GPIO15 -> LTE PWR
 GPIO16 -> LTE DTR
 GPIO17 -> LTE TX
 GPIO18 -> LTE RX
+GPIO8  -> LTE sower switch
 ```
 
-GPIO15 controls the external high-side power switch for the LTE module.
+GPIO8 controls the external high-side power switch for the LTE module.
 
 ---
 
