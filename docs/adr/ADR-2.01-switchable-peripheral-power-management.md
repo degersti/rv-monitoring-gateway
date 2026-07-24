@@ -1,4 +1,4 @@
-# ADR-012: Switchable Peripheral Power Management
+# ADR-2.01: Switchable Peripheral Power Management
 
 ## Status
 
