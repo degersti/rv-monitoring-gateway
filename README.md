@@ -16,79 +16,54 @@ The project is currently in an early development phase and follows an incrementa
 
 ## Development Roadmap
 
-### Phase 1 – Core Monitoring Prototype
+### Prototype 1 – Core Monitoring Prototype 
 
 - [x] Battery voltage monitoring
 - [x] Temperature and humidity monitoring
-- [x] Water ingress detection
-- [x] Smoke alarm integration
+- [x] Water ingress / Smoke alarm detection
 - [x] Wi-Fi communication
 - [x] Backend connectivity (MQTT)
-- [x] Historical data storage
+- [x] Data buffering
 - [x] Time management
 - [x] Deep Sleep support
 - [x] System state machine
 - [x] Watchdog
-- [ ] Firmware integration
-- [ ] Prototype validation
+- [x] Firmware integration
+- [x] Prototype 1 validation
 
-### Phase 2 – Enhanced Connectivity
+### Prototype 2 – Enhanced Connectivity
 
-- Cellular communication (LTE / NB-IoT)
-- MQTT using TLS, QoS 1/2 and Websockets
-- Bluetooth configuration
-- Improved device management
+- [ ] Migrate data buffering to SD Card
+- [ ] Writing Log and Measurements to SD Card
+- [ ] Cellular communication (LTE / NB-IoT)
+- [ ] MQTT using TLS, QoS 1/2 and Websockets
+- [ ] Bluetooth configuration
+- [ ] GPS positioning and geofencing
+
+
+
+### Optional – Extended Monitoring
+
 - OTA firmware updates
-
-### Phase 3 – Extended Monitoring
-
-- GPS positioning and geofencing
-- Writing Log and Measurements to SD Card
-- Battery management system integration
-- Solar charge controller integration
+- Bluetooth connection to integrated battery management
+- Bluetooth connection to solar charger 
 - Shore power monitoring
+- CAN-/NMEA-Bus integration
 - Additional environmental sensors
 
 ---
 
 ## Current Status
 
-🚧 Prototype 1 Development
-
-### Completed
-
-- Whitepaper created
-- GitHub repository established
-- ESP32 development environment configured
-- PlatformIO project setup
-- Modular firmware architecture
-- Logging module
-- Runtime manager
-- Time manager
-- Deep Sleep manager
-- Wi-Fi manager
-- MQTT manager
-- Persistent measurement buffer
-- Sensor drivers
-- Hardware abstraction completed
-- Multiple Architecture Decision Records (ADRs)
+🚧 Prototype 2 Development
 
 ### In Progress
 
-- Firmware integration
+- Buffering on SD-Card
 
 ### Next Milestone
 
-**Prototype 1 running unattended on real hardware**
-
-Features:
-
-- Periodic sensor measurements
-- MQTT data transmission
-- Automatic buffering during communication outages
-- Deep Sleep power optimization
-- Wake-up on alarm events
-- Automatic recovery after reset or power loss
+**Prototype 2 running unattended on real hardware**
 
 ## License
 
