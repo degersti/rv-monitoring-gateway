@@ -54,22 +54,9 @@ void loopDevWifiAndMqtt()
     lastPublishTime = now;
     publishCounter++;
 
-    SensorData testData;
-
-    testData.houseBatteryVoltage = 12.4 + (publishCounter % 5) * 0.1;
-    testData.engineBatteryVoltage = 12.7 + (publishCounter % 3) * 0.1;
-    testData.temperature = 21.5 + (publishCounter % 10) * 0.2;
-    testData.humidity = 55.0 + (publishCounter % 8);
-    testData.waterAlarm = false;
-    testData.smokeAlarm = false;
-
-    char payload[256];
-
-    getTelemetry(payload, testData);
-
     Serial.println();
     Serial.println("Publishing test telemetry:");
-    Serial.println(payload);
+    Serial.println(getTelemetry());
 
-    mqttPublish(getDeviceId(), payload);
+    mqttPublish(getDeviceId(), getTelemetry());
 }

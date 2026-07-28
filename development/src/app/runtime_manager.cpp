@@ -110,7 +110,7 @@ void initWatchdog(void)
 
     esp_err_t result = esp_task_wdt_init(&watchdogConfig);
 #else
-    esp_err_t result = esp_task_wdt_init(WATCHDOG_TIMEOUT_SECONDS, true);
+    esp_err_t result = esp_task_wdt_init(WATCHDOG_TIMEOUT_SEC, true);
 #endif
 
     if (result != ESP_OK && result != ESP_ERR_INVALID_STATE)
@@ -217,22 +217,42 @@ bool isAlarmActive(void)
  *              before entering deep sleep.
  * Parameters:  None
  * Returns:     None
- * Notes:       Configures both alarm inputs and
- *              the periodic timer as wake-up 
- *              sources.
+ * Notes:       Configures the external alarm
+ *              inputs and the periodic timer as
+ *              wake-up sources. The ESP32 wakes
+ *              up when either an alarm becomes
+ *              active or the configured cycle
+ *              interval expires.
  *************************************************/
 void prepareDeepSleep(void)
 {
-    LOG_INFO("Preparing Deep Sleep");
-    esp_sleep_enable_ext1_wakeup(WAKEUP_PIN_MASK,ESP_EXT1_WAKEUP_ANY_LOW);
-    esp_sleep_enable_timer_wakeup((uint64_t)CYCLE_INTERVAL_SEC * 1000000ULL);
+    LOG_INFO("Configuring wake-up sources");
+    esp_sleep_enable_ext1_wakeup(
+        WAKEUP_PIN_MASK,
+        ESP_EXT1_WAKEUP_ANY_LOW);
+
+    esp_sleep_enable_timer_wakeup(
+        (uint64_t)CYCLE_INTERVAL_MIN * MIN_TO_US);
 }
 
-
+/*************************************************
+ * Function:    enterDeepSleep
+ * Description: Starts the ESP32 deep sleep mode.
+ * Parameters:  None
+ * Returns:     None
+ * Notes:       Execution stops immediately after
+ *              calling esp_deep_sleep_start().
+ *              The firmware restarts from BOOT
+ *              after the next wake-up event.
+ *************************************************/
 void enterDeepSleep(void)
 {
-
-    LOG_INFO("Entering Deep Sleep");
+    LOG_INFO("Entering deep sleep [wake-up=EXT1|TIMER, interval=%u min]",
+        CYCLE_INTERVAL_MIN);
+    // Ensure all pending serial log data has been transmitted.
+    Serial.flush();
+    // Short safety delay before stopping CPU execution.
+    delay(50);
     esp_deep_sleep_start();
 }
 /*************************************************

@@ -20,6 +20,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "esp_sntp.h"
+#include "app/debug_logger.h"
 /*************************************************
  * RTC-persistent time state
  *
@@ -114,10 +115,16 @@ void initTimeManager()
 {
     // Setting system time to zero if no NTP sync 
     // possible after hard reset / powerloss
+    LOG_INFO("Initializing system time");
     if (!timeAvailable && !relativeTimeInitialized)
     {
+        LOG_INFO("Time status: RELATIVE");
         setSystemTime(0);
         relativeTimeInitialized = true;
+    }
+    else
+    {
+        LOG_INFO("Time status: ABSOLUT [source=RTC]");
     }
 }
 /*************************************************
@@ -130,7 +137,7 @@ void initTimeManager()
  * Notes:       Time becomes valid after a successful
  *              NTP synchronization.
  *************************************************/
-bool isTimeValid()
+bool isTimeAvailable()
 {
     return timeAvailable;
 }
@@ -156,12 +163,18 @@ bool isTimeValid()
    //if (!waitForValidSystemTime(NTP_SYNC_TIMEOUT_MS))
     if (!waitForNtpSync(NTP_SYNC_TIMEOUT_MS))
     {
+        LOG_INFO("NTP synchronization: FAILED");
         return false;
     }
 
     lastNtpSyncTimestamp = readSystemTimestamp();
     relativeTimeAtLastSync = timeBeforeSync;
     timeAvailable = true;
+
+    LOG_INFO("NTP synchronization: SUCCESS [previousSystemTime=%lu, newSystemTime=%lu]",
+                (unsigned long)timeBeforeSync,
+                (unsigned long)lastNtpSyncTimestamp);
+    LOG_INFO("Time status: ABSOLUTE [source=NTP]"); 
 
     return true;
 }

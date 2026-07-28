@@ -9,6 +9,8 @@
 ProgramState state; 
 // Timestamp of current state entry
 uint32_t stateStartTime;
+// Time for deep sleep (test only)
+uint32_t CYCLE_INTERVAL_SEC = 30;
 
 /*************************************************
  * Function:    initStateMachine

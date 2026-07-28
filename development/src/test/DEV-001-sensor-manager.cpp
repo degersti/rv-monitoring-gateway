@@ -1,10 +1,12 @@
 #include <Arduino.h>
+#include "app/debug_logger.h"
 #include "app/hardware_manager.h"
 #include "app/data_manager.h"
 #include "app/sensor_manager.h"
 
 static uint32_t lastReadTime = 0;
 static constexpr uint32_t READ_INTERVAL_MS = 2000;
+ MeasurementRecord record;
 
 void setupDevSensorManager()
 {
@@ -34,35 +36,36 @@ void loopDevSensorManager()
 
     lastReadTime = millis();
 
-    SensorData data = {};
 
-    readBatteryVoltages(data);
-    readSHT31(data);
-    readAlarms(data);
+
+    readBatteryVoltages(record);
+    readAlarmPins(record);
+    readEnvironmentalValues(record);
+
 
     Serial.println();
     Serial.println("Sensor Data");
     Serial.println("----------------------------------------");
 
     Serial.print("House Battery : ");
-    Serial.print(data.houseBatteryVoltage, 2);
+    Serial.print(record.houseBatteryVoltage, 2);
     Serial.println(" V");
 
     Serial.print("Engine Battery: ");
-    Serial.print(data.engineBatteryVoltage, 2);
+    Serial.print(record.engineBatteryVoltage, 2);
     Serial.println(" V");
 
     Serial.print("Temperature   : ");
-    Serial.print(data.temperature, 2);
+    Serial.print(record.temperature, 2);
     Serial.println(" °C");
 
     Serial.print("Humidity      : ");
-    Serial.print(data.humidity, 2);
+    Serial.print(record.humidity, 2);
     Serial.println(" %");
 
     Serial.print("Water Alarm   : ");
-    Serial.println(data.waterAlarm ? "ACTIVE" : "OK");
+    Serial.println(record.waterAlarm ? "ACTIVE" : "OK");
 
     Serial.print("Smoke Alarm   : ");
-    Serial.println(data.smokeAlarm ? "ACTIVE" : "OK");
+    Serial.println(record.smokeAlarm ? "ACTIVE" : "OK");
 }

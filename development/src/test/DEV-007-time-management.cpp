@@ -59,8 +59,6 @@ void loopDevTimeManagement()
     // Print timestamp and timeAvailable
     Serial.print("Timestamp: ");
     Serial.print(getCurrentTimestamp());
-    Serial.print(" | Time valid: ");
-    Serial.println(isTimeValid() ? "YES" : "NO");
     Serial.flush();
     // Wait for serial data to be transmitted
     delay(5000);

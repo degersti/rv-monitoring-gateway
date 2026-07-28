@@ -26,7 +26,7 @@
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 
 /*************************************************
- * Function:    initHardware
+ * Function:    initSensorManager
  * Description: Initializes all hardware peripherals
  *              and sensors.
  * Parameters:  None
@@ -37,19 +37,33 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();
  *************************************************/
 bool initSensorManager(void)
 {
-    // Configure ADC resolution
+    LOG_INFO("Initializing ADC");
     analogReadResolution(ADC_RESOLUTION);
-
     analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
     analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
-   
-    // Initialize I2C interface
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
-    if (!sht31.begin(SHT31_ADDR)) { 
-        LOG_WARN("Sensor nicht gefunden!");
-        return false;                               
+
+    LOG_INFO(
+        "Initializing I2C interface: SDA=%u, SCL=%u",
+        PIN_I2C_SDA,
+        PIN_I2C_SCL
+    );
+
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+
+    if (!sht31.begin(SHT31_ADDR))
+    {
+        LOG_ERROR(
+            "Initializing sensor: FAILED [type=SHT31, address=0x%02X]",
+            SHT31_ADDR
+        );
+        return false;
     }
-    LOG_INFO("Sensor gefunden!");    
+
+    LOG_INFO(
+        "Initializing sensor: SUCCESS [type=SHT31, address=0x%02X]",
+        SHT31_ADDR
+    );
+
     return true;
 }
 /*************************************************
@@ -113,7 +127,7 @@ float applyCalibration(float voltage, float gain, float offset)
  *              applyCalibration() applies gain and
  *              offset correction.
  *************************************************/
- void readBatteryVoltages(SensorData& data)
+ void readBatteryVoltages(MeasurementRecord& data)
 {
     // Read raw, divider-compensated battery voltages
     float rawHouseVoltage = readVoltageRaw(PIN_HOUSE_ADC);
@@ -124,7 +138,7 @@ float applyCalibration(float voltage, float gain, float offset)
     data.engineBatteryVoltage = applyCalibration(rawEngineVoltage, CAL_GAIN_ENGINE_VOLTAGE, CAL_OFFSET_ENGINE_VOLTAGE);
 } 
 /*************************************************
- * Function:    readSHT31
+ * Function:    readEnvironmentalValues
  * Description: Reads temperature and humidity
  *              from the SHT31 sensor.
  * Parameters:  data - Sensor data structure
@@ -132,33 +146,34 @@ float applyCalibration(float voltage, float gain, float offset)
  * Notes:       Invalid readings are reported as
  *              error values.
  *************************************************/
-void readEnvironmentalValues(SensorData& data)
+bool readEnvironmentalValues(MeasurementRecord& data)
 {
     // Read temperature and humidity from SHT31 sensor
     float temperature = sht31.readTemperature();
     float humidity = sht31.readHumidity();
 
     // Check if the readings are valid
-     if (isnan(temperature) || isnan(humidity))
+    if (isnan(temperature) || isnan(humidity))
     {
         LOG_ERROR("SHT31 read failed");
         data.temperature = -999.0f;
         data.humidity = -999.0f;
-        return;
+        return false;
     }
 
     // Store the readings in the SensorData struct
     data.temperature = temperature;
     data.humidity = humidity;    
+    return true;
 }
 /*************************************************
- * Function:    readAlarms
+ * Function:    readAlarmPins
  * Description: Reads water and smoke alarm inputs.
  * Parameters:  data - Sensor data structure
  * Returns:     None (void function)
  * Notes:       Alarm inputs are active LOW.
  *************************************************/
-void readAlarmPins(SensorData& data)
+void readAlarmPins(MeasurementRecord& data)
 {
     data.waterAlarm = digitalRead(PIN_WATER_ALARM) == LOW;
     data.smokeAlarm = digitalRead(PIN_SMOKE_ALARM) == LOW;
@@ -171,10 +186,10 @@ void readAlarmPins(SensorData& data)
  * Notes:       Convenience wrapper for all sensor
  *              acquisition functions.
  *************************************************/
-void readAllSensorData(SensorData& data)
+void readAllSensorData(MeasurementRecord& data)
 {
     // Read all sensor data
     readBatteryVoltages(data);
     readEnvironmentalValues(data);
     readAlarmPins(data);
-};
+}

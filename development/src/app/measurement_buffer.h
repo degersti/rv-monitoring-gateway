@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "measurement_record.h"
+#include "app/data_manager.h"
 
 // Buffer metadata
 struct MeasurementBufferMetadata
@@ -23,8 +23,8 @@ bool readOldestRecord(MeasurementRecord& record);
 bool removeOldestRecord();
 
 // Status
-bool isEmpty();
-bool isFull();
+bool isBufferEmpty();
+bool isBufferFull();
 uint16_t getRecordCount();
 uint32_t getOverflowCount();
 bool resetOverflowCount();

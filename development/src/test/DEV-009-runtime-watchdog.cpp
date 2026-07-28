@@ -6,6 +6,7 @@ void setupDevRuntimeWatchdog()
     Serial.begin(115200);
     delay(200);
     initRuntimeManager();
+    initWatchdog();
     Serial.println("Runtime Watchdog initialized");
     Serial.print("Current boot epoch ID: ");
     Serial.println(getBootEpochId());
