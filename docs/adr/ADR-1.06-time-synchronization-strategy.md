@@ -1,4 +1,4 @@
-# ADR-008: Time Synchronization Strategy
+# ADR-1.06: Time Synchronization Strategy
 
 ## Status
 

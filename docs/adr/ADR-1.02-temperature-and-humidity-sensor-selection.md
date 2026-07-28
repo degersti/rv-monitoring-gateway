@@ -1,4 +1,4 @@
-# ADR-003: Temperature and Humidity Sensor Selection
+# ADR-1.02: Temperature and Humidity Sensor Selection
 
 ## Status
 

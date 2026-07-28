@@ -1,4 +1,4 @@
-# ADR-010: Persistent Measurement Buffer
+# ADR-1.08: Persistent Measurement Buffer
 
 ## Status
 

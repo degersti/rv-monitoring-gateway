@@ -1,4 +1,4 @@
-# ADR-002: Battery Voltage Measurement Design
+# ADR-1.01: Battery Voltage Measurement Design
 
 ## Status
 

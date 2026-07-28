@@ -1,4 +1,4 @@
-# ADR-009: Runtime Debug and Deep Sleep Strategy
+# ADR-1.07: Runtime Debug and Deep Sleep Strategy
 ## Status
 
 Accepted

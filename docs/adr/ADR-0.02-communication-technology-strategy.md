@@ -1,4 +1,4 @@
-# ADR-101: Communication Technology Strategy
+# ADR-0.02: Communication Technology Strategy
 
 ## Status
 

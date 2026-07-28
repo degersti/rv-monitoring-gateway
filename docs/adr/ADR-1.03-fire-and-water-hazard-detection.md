@@ -1,4 +1,4 @@
-# ADR-004: Fire and Water Hazard Detection
+# ADR-1.03: Fire and Water Hazard Detection
 
 ## Status
 

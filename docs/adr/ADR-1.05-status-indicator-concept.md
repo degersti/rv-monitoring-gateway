@@ -1,4 +1,4 @@
-# ADR-007: Status Indicator Concept
+# ADR-1.05: Status Indicator Concept
 
 ## Status
 

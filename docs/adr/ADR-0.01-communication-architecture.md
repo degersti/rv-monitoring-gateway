@@ -1,4 +1,4 @@
-# ADR-100: Communication Architecture
+# ADR-0.01: Communication Architecture
 
 ## Status
 
@@ -164,8 +164,4 @@ The selected MQTT architecture is considered suitable not only for prototype dev
 
 The MQTT broker provides a stable abstraction layer between embedded devices and backend services, allowing future changes to storage technologies, visualization platforms, notification systems, and cloud infrastructure without requiring modifications to the gateway firmware.
 
-## Related Decisions
 
-- ADR-002: Backend Infrastructure
-- ADR-003: Hardware Platform
-- ADR-004: Sensor Selection

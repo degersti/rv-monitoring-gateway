@@ -1,4 +1,4 @@
-# ADR-006: Power Converter Module Selection
+# ADR-0.04: Power Converter Module Selection
 
 ## Status
 

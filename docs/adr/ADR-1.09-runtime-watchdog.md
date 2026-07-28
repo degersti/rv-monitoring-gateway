@@ -1,4 +1,4 @@
-# ADR-011: Runtime Watchdog
+# ADR-1.09: Runtime Watchdog
 
 ## Status
 
