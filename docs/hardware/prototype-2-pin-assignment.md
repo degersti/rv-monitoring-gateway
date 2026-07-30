@@ -2,7 +2,7 @@
 
 ## Status
 
-> Replaces prototype-2-pin-assignment.md
+Accepted
 
 ## Purpose
 
