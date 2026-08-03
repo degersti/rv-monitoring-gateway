@@ -3,246 +3,368 @@
  * Author:      Markus Gerstenberg
  *
  * Description:
- * Implements the system status indicator.
+ * Implements four independent status indicators.
  *
  * Responsibilities:
- * - RGB LED control
- * - Status visualization
- * - Alarm indication
- * - Telemetry activity indication
+ * - Status LED control
+ * - Network LED control
+ * - Backend LED control
+ * - Error LED control
+ * - Independent non-blocking blink patterns
+ * - Temporary non-blocking flash sequences
  *
  *************************************************/
 
 #include "status_indicator.h"
-#include <Adafruit_NeoPixel.h>
 #include "config.h"
 
-// Onboard RGB NeoPixel LED instance
-Adafruit_NeoPixel rgbLed(1, PIN_RGB_LED, NEO_GRB + NEO_KHZ800);
-
-// Current indicator state
-static IndicatorState currentState = IndicatorState::BOOT;
-
-// Timing variables for non-blocking blink patterns
-static uint32_t lastToggleTime = 0;
-static bool blinkOn = false;
-
-// Telemetry flash event
-static bool telemetryFlashActive = false;
-static uint32_t telemetryLastToggleTime = 0;
-static bool telemetryFlashOn = false;
-static uint8_t telemetryFlashCount = 0;
-
-// Telemetry flash timing (3 fast green flashes)
-static const uint32_t TELEMETRY_FLASH_INTERVAL_MS = 75;
-static const uint8_t TELEMETRY_FLASH_COUNT = 3;
-
-/*************************************************
- * Function:    setRgb
- * Description: Sets the RGB LED to the specified
- *              color and updates the LED output.
- * Parameters:  red   - Red intensity (0..255)
- *              green - Green intensity (0..255)
- *              blue  - Blue intensity (0..255)
- * Returns:     None (void function)
- * Notes:       Color values are applied directly
- *              to the onboard NeoPixel LED.
- *************************************************/
-static void setRgb(uint8_t red, uint8_t green, uint8_t blue)
+// Runtime state of a single status indicator LED
+struct IndicatorRuntime
 {
-    rgbLed.setPixelColor(0, rgbLed.Color(red, green, blue));
-    rgbLed.show();
-}
+    uint8_t pin;
+    IndicatorMode mode;
+    uint32_t lastToggleTime;
+    bool outputOn;
 
-/*************************************************
- * Function:    setOff
- * Description: Turns the RGB LED off.
- * Parameters:  None
- * Returns:     None (void function)
- * Notes:       Sets all color channels to zero.
- *************************************************/
-static void setOff(void)
+    bool flashActive;
+    uint8_t remainingFlashes;
+};
+
+// Runtime state of all indicators
+static IndicatorRuntime indicators[] =
 {
-    setRgb(0, 0, 0);
-}
-
-/*************************************************
- * Function:    blinkRgb
- * Description: Generates a non-blocking blink
- *              pattern using the specified color
- *              and interval.
- * Parameters:  red        - Red intensity (0..255)
- *              green      - Green intensity (0..255)
- *              blue       - Blue intensity (0..255)
- *              intervalMs - Blink interval in ms
- * Returns:     None (void function)
- * Notes:       Uses millis() for timing.
- *************************************************/
-static void blinkRgb(uint8_t red, uint8_t green, uint8_t blue, uint32_t intervalMs)
-{
-    uint32_t now = millis();
-
-    if (now - lastToggleTime >= intervalMs)
     {
-        blinkOn = !blinkOn;
-        lastToggleTime = now;
-
-        if (blinkOn)
-        {
-            setRgb(red, green, blue);
-        }
-        else
-        {
-            setOff();
-        }
+        PIN_LED_STATUS,
+        IndicatorMode::OFF,
+        0,
+        false,
+        false,
+        0
+    },
+    {
+        PIN_LED_NETWORK,
+        IndicatorMode::OFF,
+        0,
+        false,
+        false,
+        0
+    },
+    {
+        PIN_LED_BACKEND,
+        IndicatorMode::OFF,
+        0,
+        false,
+        false,
+        0
+    },
+    {
+        PIN_LED_ERROR,
+        IndicatorMode::OFF,
+        0,
+        false,
+        false,
+        0
     }
+};
+
+// Indicator timing
+static constexpr uint32_t BLINK_SLOW_INTERVAL_MS = 1000;
+static constexpr uint32_t BLINK_FAST_INTERVAL_MS = 150;
+static constexpr uint32_t FLASH_INTERVAL_MS = 75;
+
+/*************************************************
+ * Function:    getIndicatorRuntime
+ * Description: Returns the runtime data associated
+ *              with the selected indicator.
+ * Parameters:  indicator - Indicator enum value
+ * Returns:     Reference to the corresponding
+ *              IndicatorRuntime object
+ * Notes:       Internal helper function.
+ *************************************************/
+static IndicatorRuntime& getIndicatorRuntime(
+    Indicator indicator)
+{
+    return indicators[static_cast<uint8_t>(indicator)];
 }
 
 /*************************************************
- * Function:    updateTelemetryFlash
- * Description: Executes the telemetry activity
- *              indication pattern.
- * Parameters:  None
- * Returns:     None (void function)
- * Notes:       Displays three short green flashes
- *              after a successful telemetry
- *              transmission.
+ * Function:    writeIndicator
+ * Description: Sets the output state of the
+ *              specified indicator LED and updates
+ *              its runtime state.
+ * Parameters:  indicator - Indicator runtime data
+ *              enabled   - Desired LED state
+ *                          (true = ON,
+ *                           false = OFF)
+ * Returns:     None
+ * Notes:       Internal helper function.
  *************************************************/
-static void updateTelemetryFlash(void)
+static void writeIndicator(
+    IndicatorRuntime& indicator,
+    bool enabled)
 {
-    uint32_t now = millis();
+    indicator.outputOn = enabled;
 
-    if (now - telemetryLastToggleTime >= TELEMETRY_FLASH_INTERVAL_MS)
+    digitalWrite(
+        indicator.pin,
+        enabled ? HIGH : LOW);
+}
+
+/*************************************************
+ * Function:    updateBlink
+ * Description: Updates a non-blocking blink pattern
+ *              for the specified indicator.
+ * Parameters:  indicator   - Indicator runtime data
+ *              currentTime - Current system time
+ *                            in milliseconds
+ *              intervalMs  - Blink interval in
+ *                            milliseconds
+ * Returns:     None
+ * Notes:       Internal helper function.
+ *************************************************/
+static void updateBlink(
+    IndicatorRuntime& indicator,
+    uint32_t currentTime,
+    uint32_t intervalMs)
+{
+    if (currentTime - indicator.lastToggleTime <
+        intervalMs)
     {
-        telemetryLastToggleTime = now;
-        telemetryFlashOn = !telemetryFlashOn;
-
-        if (telemetryFlashOn)
-        {
-            setRgb(0, 255, 0);      // Green
-        }
-        else
-        {
-            setOff();
-            telemetryFlashCount++;
-
-            if (telemetryFlashCount >= TELEMETRY_FLASH_COUNT)
-            {
-                telemetryFlashActive = false;
-                telemetryFlashCount = 0;
-                telemetryFlashOn = false;
-            }
-        }
+        return;
     }
+
+    indicator.lastToggleTime = currentTime;
+
+    writeIndicator(
+        indicator,
+        !indicator.outputOn);
+}
+
+/*************************************************
+ * Function:    updateFlash
+ * Description: Updates an active non-blocking flash
+ *              sequence for the specified indicator.
+ * Parameters:  indicator   - Indicator runtime data
+ *              currentTime - Current system time
+ *                            in milliseconds
+ * Returns:     None
+ * Notes:       A flash consists of one ON phase and
+ *              one OFF phase. The normal indicator
+ *              mode resumes after the final OFF
+ *              phase has completed.
+ *************************************************/
+static void updateFlash(
+    IndicatorRuntime& indicator,
+    uint32_t currentTime)
+{
+    if (currentTime - indicator.lastToggleTime <
+        FLASH_INTERVAL_MS)
+    {
+        return;
+    }
+
+    indicator.lastToggleTime = currentTime;
+
+    if (indicator.outputOn)
+    {
+        // Complete the current flash by switching
+        // the indicator off.
+        writeIndicator(indicator, false);
+        return;
+    }
+
+    if (indicator.remainingFlashes == 0)
+    {
+        // The final OFF phase has completed.
+        indicator.flashActive = false;
+        return;
+    }
+
+    // Start the next flash.
+    indicator.remainingFlashes--;
+
+    writeIndicator(indicator, true);
 }
 
 /*************************************************
  * Function:    initStatusIndicator
- * Description: Initializes the onboard RGB LED
- *              and sets the initial boot state.
+ * Description: Initializes all indicator GPIO pins
+ *              and resets their runtime state.
  * Parameters:  None
- * Returns:     None (void function)
- * Notes:       Must be called once during system
- *              startup.
+ * Returns:     None
+ * Notes:       All indicators are switched off
+ *              during initialization.
  *************************************************/
 void initStatusIndicator(void)
 {
-    rgbLed.begin();
-    rgbLed.setBrightness(32);
-    rgbLed.show();
-
-    currentState = IndicatorState::OFF;
-}
-
-/*************************************************
- * Function:    setIndicatorState
- * Description: Updates the current status
- *              indicator state.
- * Parameters:  state - New indicator state
- * Returns:     None (void function)
- * Notes:       Resets blink timing whenever the
- *              state changes.
- *************************************************/
-void setIndicatorState(IndicatorState state)
-{
-    if (currentState != state)
+    for (IndicatorRuntime& indicator : indicators)
     {
-        currentState = state;
-        lastToggleTime = 0;
-        blinkOn = false;
+        pinMode(indicator.pin, OUTPUT);
+
+        indicator.mode = IndicatorMode::OFF;
+        indicator.lastToggleTime = 0;
+        indicator.flashActive = false;
+        indicator.remainingFlashes = 0;
+
+        writeIndicator(indicator, false);
     }
 }
+/*************************************************
+ * Function:    isStatusIndicatorBusy
+ * Description: Checks whether the status indicator
+ *              module is currently processing a
+ *              temporary indication sequence.
+ * Parameters:  None
+ * Returns:     true  - A temporary sequence is active
+ *              false - The module is idle
+ * Notes:       Can be used to prevent deep sleep
+ *              while an indication is still active.
+ *************************************************/
+bool isStatusIndicatorBusy(void)
+{
+    for (const IndicatorRuntime& indicator : indicators)
+    {
+        if (indicator.flashActive)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+/*************************************************
+ * Function:    setIndicatorMode
+ * Description: Sets the indication mode of the
+ *              selected status indicator.
+ * Parameters:  indicator - Indicator enum value
+ *              mode      - New indication mode
+ * Returns:     None
+ * Notes:       Blink timing is reset whenever the
+ *              indication mode changes.
+ *
+ *              An active flash sequence is not
+ *              interrupted. The new mode becomes
+ *              active after the flash sequence has
+ *              completed.
+ *************************************************/
+void setIndicatorMode(
+    Indicator indicator,
+    IndicatorMode mode)
+{
+    IndicatorRuntime& runtime =
+        getIndicatorRuntime(indicator);
+
+    if (runtime.mode == mode)
+    {
+        return;
+    }
+
+    runtime.mode = mode;
+
+    if (runtime.flashActive)
+    {
+        return;
+    }
+
+    runtime.lastToggleTime = millis();
+
+    // Start every new mode from a defined OFF state.
+    writeIndicator(runtime, false);
+}
 
 /*************************************************
- * Function:    triggerTelemetryFlash
- * Description: Starts the telemetry activity
- *              indication sequence.
- * Parameters:  None
- * Returns:     None (void function)
- * Notes:       Triggers three short green flashes
- *              without changing the current
- *              indicator state.
+ * Function:    triggerIndicatorFlash
+ * Description: Starts a temporary non-blocking flash
+ *              sequence on the selected indicator.
+ * Parameters:  indicator  - Indicator enum value
+ *              flashCount - Number of flashes
+ * Returns:     None
+ * Notes:       The flash sequence temporarily
+ *              overrides the normal indicator mode.
+ *
+ *              Calling this function again while a
+ *              flash sequence is active restarts
+ *              the sequence with the new count.
  *************************************************/
-void triggerTelemetryFlash(void)
+void triggerIndicatorFlash(
+    Indicator indicator,
+    uint8_t flashCount)
 {
-    telemetryFlashActive = true;
-    telemetryLastToggleTime = 0;
-    telemetryFlashOn = false;
-    telemetryFlashCount = 0;
+    if (flashCount == 0)
+    {
+        return;
+    }
+
+    IndicatorRuntime& runtime =
+        getIndicatorRuntime(indicator);
+
+    runtime.flashActive = true;
+    runtime.remainingFlashes = flashCount;
+
+    // Start the flash sequence from a defined
+    // OFF state.
+    writeIndicator(runtime, false);
+
+    // Allow the first flash to start during the
+    // next update cycle without an initial delay.
+    runtime.lastToggleTime =
+        millis() - FLASH_INTERVAL_MS;
 }
 
 /*************************************************
  * Function:    updateStatusIndicator
- * Description: Updates the status indicator LED
- *              according to the current system
- *              state.
+ * Description: Updates all status indicators
+ *              according to their current modes.
  * Parameters:  None
- * Returns:     None (void function)
- * Notes:       Must be called cyclically from the
- *              main application loop.
+ * Returns:     None
+ * Notes:       Must be called regularly from the
+ *              main program loop.
+ *
+ *              Active flash sequences temporarily
+ *              override the normal indicator mode.
  *************************************************/
 void updateStatusIndicator(void)
 {
-    if (telemetryFlashActive &&
-        currentState != IndicatorState::ALARM_ACTIVE &&
-        currentState != IndicatorState::ERROR_ACTIVE)
+    // Read the current system time once so that all
+    // indicators use the same timestamp during this
+    // update cycle.
+    const uint32_t currentTime = millis();
+
+    // Process all four indicators one after another.
+    for (IndicatorRuntime& runtime : indicators)
     {
-        updateTelemetryFlash();
-        return;
-    }
+        if (runtime.flashActive)
+        {
+            updateFlash(
+                runtime,
+                currentTime);
 
-    switch (currentState)
-    {
-        case IndicatorState::BOOT:
-            blinkRgb(255, 180, 0, 100);
-            break;
-             
-        case IndicatorState::WIFI_CONNECTING:
-            blinkRgb(0, 0, 255, 1000);
-            break;
+            continue;
+        }
 
-        case IndicatorState::WIFI_CONNECTED:
-            setRgb(0, 0, 255);
-            break;
+        switch (runtime.mode)
+        {
+            case IndicatorMode::OFF:
+                writeIndicator(runtime, false);
+                break;
 
-        case IndicatorState::MQTT_CONNECTING:
-            blinkRgb(0, 255, 0, 1000);
-            break;
+            case IndicatorMode::ON:
+                writeIndicator(runtime, true);
+                break;
 
-        case IndicatorState::MQTT_ONLINE:
-            setRgb(0, 255, 0);
-            break;
+            case IndicatorMode::BLINK_SLOW:
+                updateBlink(
+                    runtime,
+                    currentTime,
+                    BLINK_SLOW_INTERVAL_MS);
+                break;
 
-        case IndicatorState::ALARM_ACTIVE:
-            blinkRgb(255, 0, 0, 1000);
-            break;
-
-        case IndicatorState::ERROR_ACTIVE:
-            blinkRgb(255, 0, 0, 150);
-            break;
-
-        case IndicatorState::OFF:
-            setOff();
-            break;
+            case IndicatorMode::BLINK_FAST:
+                updateBlink(
+                    runtime,
+                    currentTime,
+                    BLINK_FAST_INTERVAL_MS);
+                break;
+        }
     }
 }

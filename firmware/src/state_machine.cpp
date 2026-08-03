@@ -89,9 +89,9 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::BOOT:
         {
-            setIndicatorState(IndicatorState::BOOT);
             if(isDebugModeEnabled() && !isSerialInitialized())
-            {                 
+            {   
+                setIndicatorMode(Indicator::STATUS, IndicatorMode::BLINK_FAST);              
                 initSerialDebugDelayed(stateStartTime);  
                 break;   
             } 
@@ -99,6 +99,7 @@ void runStateMachine()
             {
                 printWakeupReason();
             }
+            setIndicatorMode(Indicator::STATUS, IndicatorMode::ON);
             setState(ProgramState::INIT_SYSTEM);
             break;
         }
@@ -212,7 +213,7 @@ void runStateMachine()
             switch (wifiState)
             {
                 case WiFiConnectionState::CONNECTED:
-                    setIndicatorState(IndicatorState::WIFI_CONNECTED);
+                    setIndicatorMode(Indicator::NETWORK, IndicatorMode::ON);
                     if(isTimeSyncRequired())
                     {
                         setState(ProgramState::SYNC_TIME);
@@ -224,12 +225,12 @@ void runStateMachine()
                     break;
 
                 case WiFiConnectionState::FAILED:
-                    setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                    setIndicatorMode(Indicator::NETWORK, IndicatorMode::OFF);
                     setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case WiFiConnectionState::CONNECTING:
-                    setIndicatorState(IndicatorState::WIFI_CONNECTING);
+                    setIndicatorMode(Indicator::NETWORK, IndicatorMode::BLINK_SLOW);
                     break;
             }
             break;
@@ -245,17 +246,17 @@ void runStateMachine()
             switch (mqttState)
             {
                 case MqttConnectionState::CONNECTED:
-                    setIndicatorState(IndicatorState::MQTT_ONLINE);
+                    setIndicatorMode(Indicator::BACKEND, IndicatorMode::ON);
                     setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case MqttConnectionState::FAILED:
-                    setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                    setIndicatorMode(Indicator::BACKEND, IndicatorMode::OFF);
                     setState(ProgramState::CREATE_RECORD);
                     break;
 
                 case MqttConnectionState::CONNECTING:
-                    setIndicatorState(IndicatorState::MQTT_CONNECTING);
+                    setIndicatorMode(Indicator::BACKEND, IndicatorMode::BLINK_SLOW);
                     break;
             }
             break;
@@ -322,6 +323,8 @@ void runStateMachine()
             // Attempt to publish the prepared telemetry payload
             if (!mqttPublish(getDeviceId(), getTelemetry()))
             {
+                // Trigger a visual flash sequence to indicate failed publication
+                triggerIndicatorFlash(Indicator::ERROR, 3);
                 LOG_INFO("MQTT publish: FAILED");
 
                 // Preserve the record for a later retry
@@ -336,6 +339,8 @@ void runStateMachine()
 
                 break;
             }
+            // Trigger a visual flash sequence to indicate successful publication
+            triggerIndicatorFlash(Indicator::BACKEND, 3);
             LOG_INFO("MQTT publish: SUCCESS");
 
             // Remove a buffered record only after successful publication
@@ -381,7 +386,7 @@ void runStateMachine()
             {
                 LOG_INFO("Alarm input status: ACTIVE (action=STAY_AWAKE)");
                 LOG_DEBUG("Timer: %u min", CYCLE_INTERVAL_MIN);
-                setIndicatorState(IndicatorState::ALARM_ACTIVE);
+                setIndicatorMode(Indicator::ERROR, IndicatorMode::BLINK_SLOW);
                 setState(ProgramState::WAIT_NEXT_CYCLE);
             }
             else
@@ -399,7 +404,15 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::ENTER_DEEP_SLEEP:
         {
-            setIndicatorState(IndicatorState::OFF);
+            if (isStatusIndicatorBusy())
+            {
+                break;
+            }
+            setIndicatorMode(Indicator::STATUS, IndicatorMode::OFF);
+            setIndicatorMode(Indicator::NETWORK, IndicatorMode::OFF);
+            setIndicatorMode(Indicator::BACKEND, IndicatorMode::OFF);
+            setIndicatorMode(Indicator::ERROR, IndicatorMode::OFF);
+
             updateStatusIndicator();
             enterDeepSleep();
             break;
@@ -440,7 +453,7 @@ void runStateMachine()
             disconnectWifi();
             disconnectMqtt();
             delay(100);        
-            setIndicatorState(IndicatorState::ERROR_ACTIVE);
+            setIndicatorMode(Indicator::ERROR, IndicatorMode::BLINK_FAST);
             updateStatusIndicator();
             break;
         }

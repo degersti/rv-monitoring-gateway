@@ -16,8 +16,8 @@ constexpr uint8_t PIN_HOUSE_ADC  = 4;
 constexpr uint8_t PIN_ENGINE_ADC = 5;
 
 // Alarm input pins
-constexpr uint8_t PIN_WATER_ALARM = 12;
-constexpr uint8_t PIN_SMOKE_ALARM = 13;
+constexpr uint8_t PIN_WATER_ALARM = 13;
+constexpr uint8_t PIN_SMOKE_ALARM = 14;
 
 constexpr uint64_t WAKEUP_PIN_MASK =
     (1ULL << static_cast<gpio_num_t>(PIN_WATER_ALARM)) |
@@ -30,6 +30,12 @@ constexpr uint8_t PIN_I2C_SCL = 41;
 // ESP32-S3 DevKitC onboard RGB LED
 constexpr uint8_t PIN_RGB_LED = 48;
 
+// External status LEDs
+constexpr uint8_t PIN_LED_STATUS  = 9;
+constexpr uint8_t PIN_LED_NETWORK = 10;
+constexpr uint8_t PIN_LED_BACKEND = 11;
+constexpr uint8_t PIN_LED_ERROR   = 12;
+
 // SHT31 temperature / humidity sensor configuration
 constexpr uint8_t SHT31_ADDR = 0x44;
 
@@ -38,7 +44,7 @@ constexpr uint8_t SHT31_ADDR = 0x44;
 // ==================================================
 
 constexpr uint32_t SERIAL_MONITOR_WAIT_SEC  = 10;
-constexpr uint32_t CYCLE_INTERVAL_MIN       = 5;
+constexpr uint32_t CYCLE_INTERVAL_MIN       = 1;
 constexpr uint32_t WATCHDOG_TIMEOUT_SEC     = 30;
 
 constexpr uint64_t SEC_TO_MS = 1000ULL;

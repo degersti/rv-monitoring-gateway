@@ -50,16 +50,17 @@ void runStateMachine()
          * Entry state after reset or power-up.
          *****************************************************/
         case ProgramState::BOOT:
-        {   
-            setIndicatorState(IndicatorState::BOOT);
+        {             
             if(isDebugModeEnabled() && !isSerialInitialized())
-            {                 
+            {          
+                setIndicatorMode(Indicator::STATUS, IndicatorMode::BLINK_FAST);       
                 initSerialDebugDelayed(stateStartTime);  
                 break;   
             } 
             if (isDebugModeEnabled())
             {
                 printWakeupReason();
+                setIndicatorMode(Indicator::STATUS, IndicatorMode::OFF);
             }
             setState(ProgramState::PROCESS);
             break;
@@ -96,7 +97,6 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::IDLE:
         {
-            setIndicatorState(IndicatorState::WIFI_CONNECTED);
             if (millis() - stateStartTime >= (CYCLE_INTERVAL_SEC *1000ULL))
             {
                 setState(ProgramState::PROCESS);
@@ -113,7 +113,6 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::DEEP_SLEEP:
         {
-            setIndicatorState(IndicatorState::OFF);
             updateStatusIndicator();
             enterDeepSleep();
             break;
