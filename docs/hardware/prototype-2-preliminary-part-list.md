@@ -12,7 +12,7 @@ Prototype 2 reuses all components from Prototype 1 and adds the following hardwa
 |---:|---|---|
 | 1 | Waveshare SIM7000G CAT-M/NB-IoT/GNSS HAT | LTE modem for MQTT communication |
 | 1 | LTE antenna | Matching antenna for the selected LTE bands |
-| 1 | GNSS antenna | Required for later GNSS functionality |
+| 1 | GNSS antenna | Required for future GNSS functionality |
 | 1 | Nano SIM card | Activated IoT/mobile data SIM |
 
 ---
@@ -25,8 +25,8 @@ Prototype 2 reuses all components from Prototype 1 and adds the following hardwa
 | 1 | BC547B NPN transistor | MOSFET gate driver |
 | 1 | 100 kΩ resistor | MOSFET gate pull-up |
 | 1 | 470 Ω resistor | MOSFET gate resistor |
-| 1 | 4.7 kΩ resistor | Base resistor |
-| 1 | 100 kΩ resistor | Base pull-down |
+| 1 | 4.7 kΩ resistor | Transistor base resistor |
+| 1 | 100 kΩ resistor | Transistor base pull-down |
 
 ---
 
@@ -34,18 +34,19 @@ Prototype 2 reuses all components from Prototype 1 and adds the following hardwa
 
 | Qty | Part | Notes |
 |---:|---|---|
-| 1 | MicroSD card module (3.3 V SPI) | Offline buffering and logging |
+| 1 | MicroSD card module (3.3 V SPI) | Measurement buffering and optional data logging |
 | 1 | MicroSD card | Capacity as required |
 | 1 | 2-pin jumper header | SD card power jumper |
 | 1 | Jumper shunt | Connects +3.3 V to +3V3_SD |
 
 ---
 
-## Configuration Interface
+## User Interface
 
 | Qty | Part | Notes |
 |---:|---|---|
 | 1 | Momentary push button (NO) | Configuration button (Bluetooth provisioning / factory reset) |
 | 1 | 10 kΩ resistor | External pull-up for configuration button |
 | 1 | 100 nF ceramic capacitor *(optional)* | Hardware debounce / EMI suppression |
-
+| 4 | LEDs (3 mm or 5 mm) | STATUS, NETWORK, BACKEND and ERROR indicators |
+| 4 | 330 Ω resistors | Current limiting resistors for status LEDs |

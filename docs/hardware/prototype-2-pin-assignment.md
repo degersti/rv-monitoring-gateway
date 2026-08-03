@@ -27,12 +27,12 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 | GPIO6 | Reserved analog input | Reserved | ADC-capable |
 | GPIO7 | Reserved analog input | Reserved | ADC-capable |
 | **GPIO8** | **LTE Power Enable** | **Used** | **Controls LTE high-side switch** |
-| GPIO9 | Free | Available | Future expansion |
-| GPIO10 | Free | Available | Future expansion |
-| GPIO11 | Free | Available | Future expansion |
-| **GPIO12** | **Water ingress sensor** | **Used** | **Digital input / wake-up source** |
-| **GPIO13** | **Smoke alarm input** | **Used** | **Digital input / wake-up source** |
-| GPIO14 | Reserved alarm input | Reserved | Digital input / wake-up source |
+| **GPIO9** | **STATUS LED** | **Used** | **External operating status indicator** |
+| **GPIO10** | **NETWORK LED** | **Used** | **External Wi-Fi / LTE connection indicator** |
+| **GPIO11** | **BACKEND LED** | **Used** | **External MQTT / backend connection indicator** |
+| **GPIO12** | **ERROR LED** | **Used** | **External alarm and system fault indicator** |
+| **GPIO13** | **Water ingress sensor** | **Used** | **Digital input / wake-up source** |
+| **GPIO14** | **Smoke alarm input** | **Used** | **Digital input / wake-up source** |
 | **GPIO15** | **LTE PWR** | **Used** | **???** |
 | **GPIO16** | **LTE DTR** | **Used** | **LTE sleep / wake control** |
 | **GPIO17** | **LTE UART TX** | **Used** | **ESP32 TX → LTE RXD** |
@@ -69,28 +69,28 @@ This pin assignment is intended for the ESP32-S3 DevKitC-1 N16R8.
 ## Prototype Wiring Overview
 
 ```text
-3V3                 ----|  ESP32 |--- GND
-3V3                 ----|        |--- U0TXD / GPIO43
-RST                 ----|        |--- U0RXD / GPIO44
-GPIO04 / House ADC  ----|        |--- GPIO01 / Serial Debug Enable
-GPIO05 / Engine ADC ----|        |--- GPIO02 / Config Button
-GPIO06 / free       ----|        |--- GPIO42
-GPIO07 / free       ----|        |--- GPIO41 / I2C SDA
-GPIO15 / LTE PWR    ----|        |--- GPIO40 / I2C SCL
-GPIO16 / LTE DTR    ----|        |--- GPIO39
-GPIO17 / LTE TX     ----|        |--- GPIO38 / Status LED
-GPIO18 / LTE RX     ----|        |--- GPIO37 / SD CS
-GPIO08 / LTE PWR EN ----|        |--- GPIO36 / SD MOSI
-GPIO03 / avoid      ----|        |--- GPIO35 / SD SCK
-GPIO46 / avoid      ----|        |--- GPIO00 / BOOT
-GPIO09 / free       ----|        |--- GPIO45 / avoid
-GPIO10 / free       ----|        |--- GPIO48 / RGB LED
-GPIO11 / free       ----|        |--- GPIO47 / SD MISO
-GPIO12 / Water      ----|        |--- GPIO21 / SD PWR EN
-GPIO13 / Smoke      ----|        |--- GPIO20 / USB D+
-GPIO14              ----|        |--- GPIO19 / USB D-
-5V0                 ----|        |--- GND
-GND                 ----|        |--- GND
+3V3                  ----|  ESP32 |--- GND
+3V3                  ----|        |--- U0TXD / GPIO43
+RST                  ----|        |--- U0RXD / GPIO44
+GPIO04 / House ADC   ----|        |--- GPIO01 / Serial Debug Enable
+GPIO05 / Engine ADC  ----|        |--- GPIO02 / Config Button
+GPIO06 / free        ----|        |--- GPIO42
+GPIO07 / free        ----|        |--- GPIO41 / I2C SDA
+GPIO15 / LTE PWR     ----|        |--- GPIO40 / I2C SCL
+GPIO16 / LTE DTR     ----|        |--- GPIO39
+GPIO17 / LTE TX      ----|        |--- GPIO38 / Status LED
+GPIO18 / LTE RX      ----|        |--- GPIO37 / SD CS
+GPIO08 / LTE PWR EN  ----|        |--- GPIO36 / SD MOSI
+GPIO03 / avoid       ----|        |--- GPIO35 / SD SCK
+GPIO46 / avoid       ----|        |--- GPIO00 / BOOT
+GPIO09 / Status LED  ----|        |--- GPIO45 / avoid
+GPIO10 / Network LED ----|        |--- GPIO48 / RGB LED unused
+GPIO11 / Backend LED ----|        |--- GPIO47 / SD MISO
+GPIO12 / Error LED   ----|        |--- GPIO21 / SD PWR EN
+GPIO13 / Water       ----|        |--- GPIO20 / USB D+
+GPIO14 / Smoke       ----|        |--- GPIO19 / USB D-
+5V0                  ----|        |--- GND
+GND                  ----|        |--- GND
 ```
 
 ---
@@ -208,6 +208,25 @@ The SD card supply is routed through a removable jumper.
 This allows future replacement of the jumper by an electronic power switch without modifying the remaining hardware.
 
 GPIO21 is reserved for future SD power control.
+
+---
+
+## Status LEDs
+
+Prototype 2 uses four dedicated external status LEDs.
+
+```text
+GPIO9  -> STATUS LED
+GPIO10 -> NETWORK LED
+GPIO11 -> BACKEND LED
+GPIO12 -> ERROR LED
+```
+
+Each LED shall be connected through an appropriate current-limiting resistor.
+
+The onboard RGB LED of the ESP32-S3 DevKitC-1 is not used by Prototype 2.
+
+The logical behavior, operating modes, and blink patterns of the status indicators are defined in ADR-2.03 *Status Indicator Concept*.
 
 ---
 
