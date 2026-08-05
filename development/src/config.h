@@ -39,6 +39,13 @@ constexpr uint8_t PIN_LED_ERROR   = 12;
 // SHT31 temperature / humidity sensor configuration
 constexpr uint8_t SHT31_ADDR = 0x44;
 
+// SD card SPI interface configuration
+constexpr uint8_t PIN_SD_SCK  = 35;
+constexpr uint8_t PIN_SD_MOSI = 36;
+constexpr uint8_t PIN_SD_CS   = 37;
+constexpr uint8_t PIN_SD_MISO = 47;
+
+
 // ==================================================
 // Runtime / cycle configuration
 // ==================================================

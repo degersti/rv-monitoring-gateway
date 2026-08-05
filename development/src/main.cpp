@@ -34,6 +34,10 @@
     #include "test/DEV-010-fault-manager.h"
 #endif
 
+#ifdef DEV_011_SD_MANAGER
+    #include "test/DEV-011-sd-manager.h"
+#endif
+
 void setup()
 {
     #ifdef DEV_001_SENSOR_MANAGER
@@ -59,6 +63,9 @@ void setup()
     #endif
     #ifdef DEV_010_FAULT_MANAGER
         setupDevFaultManager();
+    #endif
+    #ifdef DEV_011_SD_MANAGER
+        setupDevSdManager();
     #endif
 }
 void loop()
@@ -87,4 +94,8 @@ void loop()
     #ifdef DEV_010_FAULT_MANAGER
         loopDevFaultManager();
     #endif
+    #ifdef DEV_011_SD_MANAGER
+        loopDevSdManager();
+    #endif
+    
 }
