@@ -30,6 +30,10 @@
     #include "test/DEV-009-runtime-watchdog.h"
 #endif
 
+#ifdef DEV_010_FAULT_MANAGER
+    #include "test/DEV-010-fault-manager.h"
+#endif
+
 void setup()
 {
     #ifdef DEV_001_SENSOR_MANAGER
@@ -52,6 +56,9 @@ void setup()
     #endif
         #ifdef DEV_009_RUNTIME_WATCHDOG
         setupDevRuntimeWatchdog();
+    #endif
+    #ifdef DEV_010_FAULT_MANAGER
+        setupDevFaultManager();
     #endif
 }
 void loop()
@@ -76,5 +83,8 @@ void loop()
     #endif
     #ifdef DEV_009_RUNTIME_WATCHDOG
         loopDevRuntimeWatchdog();
+    #endif
+    #ifdef DEV_010_FAULT_MANAGER
+        loopDevFaultManager();
     #endif
 }

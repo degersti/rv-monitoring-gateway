@@ -18,7 +18,6 @@ enum class ProgramState
     WAIT_NEXT_CYCLE,
     ENTER_DEEP_SLEEP,
 
-    ERROR
 };
 
 enum class PublishSource

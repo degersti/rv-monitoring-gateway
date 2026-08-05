@@ -29,6 +29,7 @@
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
 #include "app/status_indicator.h"
+#include "app/fault_manager.h"
 
 // Current program state
 ProgramState state; 
@@ -89,6 +90,8 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::BOOT:
         {
+            if(isAlarmActive()) setFault(FaultCode::INPUT_ALARM_ACTIVE);
+     
             if(isDebugModeEnabled() && !isSerialInitialized())
             {   
                 setIndicatorMode(Indicator::STATUS, IndicatorMode::BLINK_FAST);              
@@ -114,7 +117,7 @@ void runStateMachine()
             if(!initBuffer())
             {
                 LOG_ERROR("Measurement buffer initialization failed");
-                setState(ProgramState::ERROR);
+                setFault(FaultCode::INVALID_SYSTEM_STATE);
                 break;
             }
             initWifi();
@@ -125,7 +128,8 @@ void runStateMachine()
             }
             else
             {
-                setState(ProgramState::ERROR);
+                setState(ProgramState::POWER_DECISION);
+                break;
             }
             break;
         }
@@ -149,7 +153,7 @@ void runStateMachine()
             if (!updateData())
             {
                 LOG_ERROR("Data update failed.");
-                setState(ProgramState::ERROR);
+                setFault(FaultCode::SD_WRITE_FAILED);
                 break;
             }
             else
@@ -323,8 +327,6 @@ void runStateMachine()
             // Attempt to publish the prepared telemetry payload
             if (!mqttPublish(getDeviceId(), getTelemetry()))
             {
-                // Trigger a visual flash sequence to indicate failed publication
-                triggerIndicatorFlash(Indicator::ERROR, 3);
                 LOG_INFO("MQTT publish: FAILED");
 
                 // Preserve the record for a later retry
@@ -348,7 +350,8 @@ void runStateMachine()
             {
                 if (!removeOldestRecord())
                 {
-                    setState(ProgramState::ERROR);
+                    setFault(FaultCode::SD_WRITE_FAILED);
+                    setState(ProgramState::POWER_DECISION);
                     break;
                 }
 
@@ -386,12 +389,13 @@ void runStateMachine()
             {
                 LOG_INFO("Alarm input status: ACTIVE (action=STAY_AWAKE)");
                 LOG_DEBUG("Timer: %u min", CYCLE_INTERVAL_MIN);
-                setIndicatorMode(Indicator::ERROR, IndicatorMode::BLINK_SLOW);
+                setFault(FaultCode::INPUT_ALARM_ACTIVE);
                 setState(ProgramState::WAIT_NEXT_CYCLE);
             }
             else
             {
                 LOG_INFO("Alarm input status: INACTIVE (action=DEEP_SLEEP)");
+                clearFault(FaultCode::INPUT_ALARM_ACTIVE);
                 prepareDeepSleep();
                 setState(ProgramState::ENTER_DEEP_SLEEP);
             }
@@ -426,6 +430,7 @@ void runStateMachine()
         case ProgramState::WAIT_NEXT_CYCLE:
         {
             mqttLoop();
+            
             if (millis() - stateStartTime >= (CYCLE_INTERVAL_MIN * MIN_TO_MS))
             {
                 if (!getWiFiConnectionStatus())
@@ -442,19 +447,10 @@ void runStateMachine()
                 }
                 setState(ProgramState::CREATE_RECORD);
             }
-            break;
-        }
-        /*****************************************************
-         * STATE: ERROR
-         * Critical system error.
-         *****************************************************/
-        case ProgramState::ERROR:
-        {
-            disconnectWifi();
-            disconnectMqtt();
-            delay(100);        
-            setIndicatorMode(Indicator::ERROR, IndicatorMode::BLINK_FAST);
-            updateStatusIndicator();
+            else if (!isAlarmActive())
+            {
+                setState(ProgramState::POWER_DECISION);
+            }
             break;
         }
     }

@@ -23,10 +23,13 @@ struct IndicatorRuntime
 {
     uint8_t pin;
     IndicatorMode mode;
-    uint32_t lastToggleTime;
-    bool outputOn;
 
+    uint32_t lastToggleTime;
+    uint32_t modeChangeTime;
+
+    bool outputOn;
     bool flashActive;
+
     uint8_t remainingFlashes;
 };
 
@@ -71,6 +74,7 @@ static IndicatorRuntime indicators[] =
 static constexpr uint32_t BLINK_SLOW_INTERVAL_MS = 1000;
 static constexpr uint32_t BLINK_FAST_INTERVAL_MS = 150;
 static constexpr uint32_t FLASH_INTERVAL_MS = 75;
+static constexpr uint32_t MIN_MODE_DISPLAY_TIME_MS = 5000;
 
 /*************************************************
  * Function:    getIndicatorRuntime
@@ -203,6 +207,7 @@ void initStatusIndicator(void)
 
         indicator.mode = IndicatorMode::OFF;
         indicator.lastToggleTime = 0;
+        indicator.modeChangeTime = millis();
         indicator.flashActive = false;
         indicator.remainingFlashes = 0;
 
@@ -213,18 +218,30 @@ void initStatusIndicator(void)
  * Function:    isStatusIndicatorBusy
  * Description: Checks whether the status indicator
  *              module is currently processing a
- *              temporary indication sequence.
+ *              temporary indication sequence or
+ *              minimum mode display period.
  * Parameters:  None
- * Returns:     true  - A temporary sequence is active
+ * Returns:     true  - An indication is still active
  *              false - The module is idle
  * Notes:       Can be used to prevent deep sleep
- *              while an indication is still active.
+ *              until every changed indicator mode
+ *              has been visible for at least the
+ *              configured minimum duration.
  *************************************************/
 bool isStatusIndicatorBusy(void)
 {
+    const uint32_t currentTime = millis();
+
     for (const IndicatorRuntime& indicator : indicators)
     {
         if (indicator.flashActive)
+        {
+            return true;
+        }
+
+        if (indicator.mode != IndicatorMode::OFF &&
+            currentTime - indicator.modeChangeTime <
+            MIN_MODE_DISPLAY_TIME_MS)
         {
             return true;
         }
@@ -232,20 +249,17 @@ bool isStatusIndicatorBusy(void)
 
     return false;
 }
+
 /*************************************************
  * Function:    setIndicatorMode
- * Description: Sets the indication mode of the
- *              selected status indicator.
- * Parameters:  indicator - Indicator enum value
- *              mode      - New indication mode
+ * Description: Sets the operating mode of the
+ *              selected indicator.
+ * Parameters:  indicator - Indicator to update
+ *              mode      - New indicator mode
  * Returns:     None
- * Notes:       Blink timing is reset whenever the
- *              indication mode changes.
- *
- *              An active flash sequence is not
- *              interrupted. The new mode becomes
- *              active after the flash sequence has
- *              completed.
+ * Notes:       The mode change timestamp is reset
+ *              only when the requested mode differs
+ *              from the currently active mode.
  *************************************************/
 void setIndicatorMode(
     Indicator indicator,
@@ -260,6 +274,7 @@ void setIndicatorMode(
     }
 
     runtime.mode = mode;
+    runtime.modeChangeTime = millis();
 
     if (runtime.flashActive)
     {

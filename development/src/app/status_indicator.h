@@ -32,7 +32,7 @@ enum class IndicatorMode : uint8_t
 };
 
 void initStatusIndicator(void);
-
+bool isStatusIndicatorBusy(void);
 void setIndicatorMode(Indicator indicator,IndicatorMode mode);
 void triggerIndicatorFlash(Indicator indicator, uint8_t flashCount = 1);
 void updateStatusIndicator(void);

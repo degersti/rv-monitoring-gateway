@@ -18,6 +18,7 @@
 #include "app/hardware_manager.h"
 #include "app/status_indicator.h"
 #include "state_machine.h"
+#include "app/fault_manager.h"
 
 /*************************************************
  * Function:    setup
@@ -37,6 +38,7 @@ void setup()
     initHardwareManager();
     initStatusIndicator();
     initStateMachine();
+    initFaultManager();
 }
 
 /*************************************************
@@ -55,6 +57,7 @@ void setup()
 void loop()
 {
     runStateMachine();
+    updateFaultManager();
     updateStatusIndicator();
     feedRuntimeWatchdog();
 }
