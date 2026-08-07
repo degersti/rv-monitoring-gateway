@@ -1119,3 +1119,61 @@ uint16_t getRecordCount()
     return static_cast<uint16_t>(
         totalCount);
 }
+/*************************************************
+ * Function:    getAbsoluteRecordCount
+ * Description: Returns the number of valid
+ *              absolute measurement records.
+ * Parameters:  None
+ * Returns:     Number of records in the absolute
+ *              buffer directory.
+ * Notes:       Only records available for
+ *              transmission are included.
+ *************************************************/
+uint16_t getAbsoluteRecordCount()
+{
+    uint32_t count = 0;
+
+    if (!countValidRecords(
+            BUFFER_ABSOLUTE_DIR,
+            count))
+    {
+        return 0;
+    }
+
+    if (count > UINT16_MAX)
+    {
+        return UINT16_MAX;
+    }
+
+    return static_cast<uint16_t>(count);
+}
+
+/*************************************************
+ * Function:    getRelativeRecordCount
+ * Description: Returns the number of valid
+ *              relative measurement records.
+ * Parameters:  None
+ * Returns:     Number of records in the relative
+ *              buffer directory.
+ * Notes:       Relative records are not available
+ *              for transmission until their
+ *              timestamps have been reconstructed.
+ *************************************************/
+uint16_t getRelativeRecordCount()
+{
+    uint32_t count = 0;
+
+    if (!countValidRecords(
+            BUFFER_RELATIVE_DIR,
+            count))
+    {
+        return 0;
+    }
+
+    if (count > UINT16_MAX)
+    {
+        return UINT16_MAX;
+    }
+
+    return static_cast<uint16_t>(count);
+}

@@ -9,3 +9,5 @@ bool readOldestRecord(MeasurementRecord& record);
 bool removeOldestRecord();
 bool isBufferEmpty();
 uint16_t getRecordCount();
+uint16_t getAbsoluteRecordCount();
+uint16_t getRelativeRecordCount();

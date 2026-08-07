@@ -373,16 +373,33 @@ static void readAndRemoveAbsoluteRecord()
  *************************************************/
 static void printBufferStatus()
 {
+    const uint16_t absoluteCount =
+        getAbsoluteRecordCount();
+
+    const uint16_t relativeCount =
+        getRelativeRecordCount();
+
+    const uint16_t totalCount =
+        getRecordCount();
+
     Serial.println();
     Serial.println(
         "Measurement buffer status:");
 
     Serial.printf(
-        "Record count : %u\n",
-        getRecordCount());
+        "Absolute records : %u\n",
+        absoluteCount);
 
     Serial.printf(
-        "Buffer empty : %s\n",
+        "Relative records : %u\n",
+        relativeCount);
+
+    Serial.printf(
+        "Total records    : %u\n",
+        totalCount);
+
+    Serial.printf(
+        "Buffer empty     : %s\n",
         isBufferEmpty()
             ? "YES"
             : "NO");
