@@ -10,17 +10,19 @@
  * 1. Insert the SD card and start the ESP32.
  *
  * 2. Hold PIN_SERIAL_DEBUG_ENABLE LOW during
- *    startup to create five measurement records.
+ *    startup to create five relative records and
+ *    one absolute record.
  *
  * 3. Restart the ESP32 without holding the pin
  *    LOW.
  *
  * 4. Verify that:
- *    - initBuffer() detects the existing records
- *    - getRecordCount() reports the stored records
- *    - readOldestRecord() returns records in
- *      chronological order
- *    - removeOldestRecord() deletes the records
+ *    - the relative records are removed because a
+ *      new Boot Epoch is detected
+ *    - the absolute record remains available
+ *    - readOldestRecord() returns the absolute
+ *      record
+ *    - removeOldestRecord() deletes the record
  *
  * 5. Restart the ESP32 again.
  *
@@ -38,6 +40,8 @@
  * Notes:
  * - Records with a valid Unix timestamp are stored
  *   in /buffer/absolute.
+ * - TEST_ABSOLUTE_TIMESTAMP is an artificial Unix
+ *   timestamp used only by this development test.
  * - Records without a valid Unix timestamp are
  *   stored in /buffer/relative.
  * - readOldestRecord() only returns records from
@@ -53,6 +57,9 @@
 #include "app/sd_manager.h"
 #include "app/measurement_buffer.h"
 
+
+static constexpr uint8_t RELATIVE_TEST_RECORD_COUNT = 5;
+static constexpr uint32_t TEST_ABSOLUTE_TIMESTAMP = 1750000000UL;
 
 static MeasurementRecord record;
 
@@ -114,13 +121,13 @@ static void printMeasurementRecord(
 
 
 /*************************************************
- * Function:    createTestRecord
- * Description: Creates one measurement record
- *              with test data.
+ * Function:    createRelativeTestRecord
+ * Description: Creates one relative measurement
+ *              record with test data.
  * Parameters:  index - Test record number
  * Returns:     Initialized measurement record
  *************************************************/
-static MeasurementRecord createTestRecord(
+static MeasurementRecord createRelativeTestRecord(
     uint8_t index)
 {
     MeasurementRecord testRecord{};
@@ -143,7 +150,38 @@ static MeasurementRecord createTestRecord(
     testRecord.humidity =
         50.0f + index;
 
-    testRecord.waterAlarm = false;
+    testRecord.waterAlarm =
+        index == 4;
+
+    testRecord.smokeAlarm =
+        index == 5;
+
+    return testRecord;
+}
+
+
+/*************************************************
+ * Function:    createAbsoluteTestRecord
+ * Description: Creates one absolute measurement
+ *              record with recognizable test data.
+ * Parameters:  None
+ * Returns:     Initialized measurement record
+ *************************************************/
+static MeasurementRecord createAbsoluteTestRecord()
+{
+    MeasurementRecord testRecord{};
+
+    testRecord.bootEpochId =
+        getBootEpochId();
+
+    testRecord.timestamp =
+        TEST_ABSOLUTE_TIMESTAMP;
+
+    testRecord.houseBatteryVoltage = 13.25f;
+    testRecord.engineBatteryVoltage = 14.10f;
+    testRecord.temperature = 27.50f;
+    testRecord.humidity = 63.00f;
+    testRecord.waterAlarm = true;
     testRecord.smokeAlarm = false;
 
     return testRecord;
@@ -151,9 +189,45 @@ static MeasurementRecord createTestRecord(
 
 
 /*************************************************
+ * Function:    writeTestRecord
+ * Description: Prints and writes one test record.
+ * Parameters:  type   - Record type label
+ *              index  - Displayed record number
+ *              record - Record to write
+ * Returns:     true  - Record written
+ *              false - Write failed
+ *************************************************/
+static bool writeTestRecord(
+    const char* type,
+    uint8_t index,
+    const MeasurementRecord& record)
+{
+    Serial.println();
+
+    Serial.printf(
+        "Writing %s record %u:\n",
+        type,
+        index);
+
+    printMeasurementRecord(record);
+
+    Serial.print("Write status  : ");
+
+    if (!pushRecord(record))
+    {
+        Serial.println("FAILED");
+        return false;
+    }
+
+    Serial.println("OK");
+    return true;
+}
+
+
+/*************************************************
  * Function:    writeTestRecords
- * Description: Writes five test records to the
- *              measurement buffer.
+ * Description: Writes five relative records and
+ *              one absolute record.
  * Parameters:  None
  * Returns:     None
  *************************************************/
@@ -161,44 +235,48 @@ static void writeTestRecords()
 {
     Serial.println();
     Serial.println(
-        "TEST: Writing measurement records");
+        "TEST: Writing relative and absolute records");
 
-    for (uint8_t i = 1; i <= 5; ++i)
+    for (uint8_t i = 1;
+         i <= RELATIVE_TEST_RECORD_COUNT;
+         ++i)
     {
-        MeasurementRecord testRecord =
-            createTestRecord(i);
+        const MeasurementRecord relativeRecord =
+            createRelativeTestRecord(i);
 
-        Serial.printf(
-            "Writing record %u "
-            "[timestamp=%lu]... ",
+        writeTestRecord(
+            "RELATIVE",
             i,
-            static_cast<unsigned long>(
-                testRecord.timestamp));
+            relativeRecord);
 
-        if (pushRecord(testRecord))
-        {
-            Serial.println("OK");
-        }
-        else
-        {
-            Serial.println("FAILED");
-        }
-
-        // Ensure unique timestamps.
+        // Ensure unique relative timestamps.
         delay(1100);
     }
+
+    const MeasurementRecord absoluteRecord =
+        createAbsoluteTestRecord();
+
+    writeTestRecord(
+        "ABSOLUTE",
+        1,
+        absoluteRecord);
+
+    Serial.println();
 
     Serial.printf(
         "Record count after write: %u\n",
         getRecordCount());
+
+    Serial.println(
+        "Expected count          : 6");
 }
 
 
 /*************************************************
  * Function:    readAndRemoveTestRecords
- * Description: Reads all transmissible records in
- *              chronological order and removes
- *              them afterwards.
+ * Description: Reads all transmissible absolute
+ *              records, prints their contents and
+ *              removes them afterwards.
  * Parameters:  None
  * Returns:     None
  *************************************************/
@@ -206,14 +284,11 @@ static void readAndRemoveTestRecords()
 {
     Serial.println();
     Serial.println(
-        "TEST: Reading measurement records");
-
-    const uint16_t initialRecordCount =
-        getRecordCount();
+        "TEST: Reading absolute measurement records");
 
     Serial.printf(
-        "Buffered records: %u\n",
-        initialRecordCount);
+        "Buffered records before read: %u\n",
+        getRecordCount());
 
     uint16_t readCount = 0;
 
@@ -221,38 +296,37 @@ static void readAndRemoveTestRecords()
     {
         readCount++;
 
+        Serial.println();
+
         Serial.printf(
-            "\nRecord %u:\n",
+            "Read absolute record %u:\n",
             readCount);
 
         printMeasurementRecord(record);
 
-        Serial.print(
-            "Removing record... ");
+        Serial.print("Remove status : ");
 
-        if (removeOldestRecord())
-        {
-            Serial.println("OK");
-        }
-        else
+        if (!removeOldestRecord())
         {
             Serial.println("FAILED");
             break;
         }
+
+        Serial.println("OK");
     }
 
     Serial.println();
 
     Serial.printf(
-        "Records read and removed: %u\n",
+        "Absolute records read   : %u\n",
         readCount);
 
     Serial.printf(
-        "Remaining record count: %u\n",
+        "Remaining record count  : %u\n",
         getRecordCount());
 
     Serial.printf(
-        "Buffer empty: %s\n",
+        "Buffer empty            : %s\n",
         isBufferEmpty()
             ? "YES"
             : "NO");
@@ -323,6 +397,18 @@ void setupDevMeasurementBuffer()
     initRuntimeManager();
     initTimeManager();
 
+    Serial.printf(
+        "New Boot Epoch: %s\n",
+        hasNewBootEpoch()
+            ? "YES"
+            : "NO");
+
+    Serial.printf(
+        "Debug pin    : %s\n",
+        digitalRead(PIN_SERIAL_DEBUG_ENABLE) == LOW
+            ? "LOW"
+            : "HIGH");
+
     Serial.println();
     Serial.println(
         "Initializing SD card...");
@@ -357,10 +443,12 @@ void setupDevMeasurementBuffer()
 
     /*
      * Jumper LOW:
-     * Create five new measurement records.
+     * Write five relative records and one absolute
+     * record.
      *
      * Jumper HIGH:
-     * Read and remove existing absolute records.
+     * Read, display and remove all remaining
+     * absolute records.
      */
     if (digitalRead(
             PIN_SERIAL_DEBUG_ENABLE) == LOW)
