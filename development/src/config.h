@@ -131,7 +131,22 @@ constexpr uint8_t  SAMPLE_COUNT    = 32;
 constexpr uint16_t SAMPLE_DELAY_MS = 2;
 
 // ==================================================
-// Measurement buffer configuration
+// Buffer configuration
 // ==================================================
 
-constexpr uint16_t MEASUREMENT_BUFFER_SIZE = 256;
+// Reserve enough free space for filesystem metadata
+// and at least one additional measurement record.
+static constexpr uint64_t MIN_FREE_SPACE_BYTES = 4096ULL;
+
+// Buffer paths
+static constexpr const char* BUFFER_ROOT_DIR =
+    "/buffer";
+
+static constexpr const char* BUFFER_ABSOLUTE_DIR =
+    "/buffer/absolute";
+
+static constexpr const char* BUFFER_RELATIVE_DIR =
+    "/buffer/relative";
+
+static constexpr const char* BUFFER_FILE_EXTENSION =
+    ".bin";

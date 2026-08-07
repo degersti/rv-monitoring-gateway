@@ -11,6 +11,8 @@
  * - Separate absolute and relative timestamps
  * - Retrieve absolute records chronologically
  * - Reconstruct buffer state from the SD card
+ * - Remove oldest records when SD storage becomes
+ *   insufficient
  *
  *******************************************#******/
 #include <Arduino.h>
@@ -18,34 +20,12 @@
 
 #include "config.h"
 #include "app/measurement_buffer.h"
+#include "app/measurement_record.h"
 #include "app/sd_manager.h"
 #include "app/debug_logger.h"
 #include "app/fault_manager.h"
 
-//--------------------------------------------------
-// Buffer paths
-//--------------------------------------------------
-static constexpr const char* BUFFER_ROOT_DIR =
-    "/buffer";
 
-static constexpr const char* BUFFER_ABSOLUTE_DIR =
-    "/buffer/absolute";
-
-static constexpr const char* BUFFER_RELATIVE_DIR =
-    "/buffer/relative";
-
-static constexpr const char* BUFFER_FILE_EXTENSION =
-    ".bin";
-
-// Unix timestamps are clearly separated from the
-// relative runtime timestamps used before time sync.
-static constexpr uint32_t MIN_VALID_UNIX_TIMESTAMP =
-    1000000000UL;
-
-// Overflow information is runtime-only.
-// ADR-2.02 explicitly forbids persistent buffer
-// metadata outside the measurement records.
-static uint32_t overflowCounter = 0;
 
 //--------------------------------------------------
 // Helper functions
@@ -64,7 +44,7 @@ static uint32_t overflowCounter = 0;
  *************************************************/
 static bool isAbsoluteTimestamp(uint32_t timestamp)
 {
-    return timestamp >= MIN_VALID_UNIX_TIMESTAMP;
+    return timestamp >= VALID_TIMESTAMP_VALUE;
 }
 
 /*************************************************
@@ -88,7 +68,8 @@ static bool isValidRecordFileName(
         return false;
     }
 
-    const char* fileName = strrchr(name, '/');
+    const char* fileName =
+        strrchr(name, '/');
 
     if (fileName != nullptr)
     {
@@ -99,7 +80,9 @@ static bool isValidRecordFileName(
         fileName = name;
     }
 
-    const size_t length = strlen(fileName);
+    const size_t length =
+        strlen(fileName);
+
     const size_t extensionLength =
         strlen(BUFFER_FILE_EXTENSION);
 
@@ -121,16 +104,19 @@ static bool isValidRecordFileName(
          i < length - extensionLength;
          ++i)
     {
-        const char character = fileName[i];
+        const char character =
+            fileName[i];
 
-        if (character < '0' || character > '9')
+        if (character < '0' ||
+            character > '9')
         {
             return false;
         }
 
         value =
             value * 10ULL +
-            static_cast<uint64_t>(character - '0');
+            static_cast<uint64_t>(
+                character - '0');
 
         if (value > UINT32_MAX)
         {
@@ -138,7 +124,8 @@ static bool isValidRecordFileName(
         }
     }
 
-    timestamp = static_cast<uint32_t>(value);
+    timestamp =
+        static_cast<uint32_t>(value);
 
     return true;
 }
@@ -184,7 +171,9 @@ static bool writeRecordFile(
         LOG_ERROR(
             "Cannot write measurement record: SD card unavailable");
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
@@ -193,7 +182,9 @@ static bool writeRecordFile(
         LOG_ERROR(
             "Cannot write measurement record: path is null");
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
@@ -203,11 +194,14 @@ static bool writeRecordFile(
             "Measurement record already exists: %s",
             path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
-    File file = SD.open(path, FILE_WRITE);
+    File file =
+        SD.open(path, FILE_WRITE);
 
     if (!file)
     {
@@ -215,13 +209,16 @@ static bool writeRecordFile(
             "Failed to create measurement record: %s",
             path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
     const size_t writtenBytes =
         file.write(
-            reinterpret_cast<const uint8_t*>(&record),
+            reinterpret_cast<const uint8_t*>(
+                &record),
             sizeof(record));
 
     file.flush();
@@ -232,16 +229,21 @@ static bool writeRecordFile(
         LOG_ERROR(
             "Incomplete measurement record write: %s [%u/%u bytes]",
             path,
-            static_cast<unsigned>(writtenBytes),
-            static_cast<unsigned>(sizeof(record)));
+            static_cast<unsigned>(
+                writtenBytes),
+            static_cast<unsigned>(
+                sizeof(record)));
 
         SD.remove(path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
-    File verifyFile = SD.open(path, FILE_READ);
+    File verifyFile =
+        SD.open(path, FILE_READ);
 
     if (!verifyFile)
     {
@@ -249,11 +251,15 @@ static bool writeRecordFile(
             "Failed to verify measurement record: %s",
             path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
-    const size_t storedSize = verifyFile.size();
+    const size_t storedSize =
+        verifyFile.size();
+
     verifyFile.close();
 
     if (storedSize != sizeof(record))
@@ -261,16 +267,18 @@ static bool writeRecordFile(
         LOG_ERROR(
             "Invalid stored measurement record size: %s [%u/%u bytes]",
             path,
-            static_cast<unsigned>(storedSize),
-            static_cast<unsigned>(sizeof(record)));
+            static_cast<unsigned>(
+                storedSize),
+            static_cast<unsigned>(
+                sizeof(record)));
 
         SD.remove(path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
-
-    clearFault(FaultCode::SD_WRITE_FAILED);
 
     return true;
 }
@@ -295,11 +303,25 @@ static bool readRecordFile(
         LOG_ERROR(
             "Cannot read measurement record: SD card unavailable");
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
-    File file = SD.open(path, FILE_READ);
+    if (path == nullptr)
+    {
+        LOG_ERROR(
+            "Cannot read measurement record: path is null");
+
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
+        return false;
+    }
+
+    File file =
+        SD.open(path, FILE_READ);
 
     if (!file)
     {
@@ -307,7 +329,9 @@ static bool readRecordFile(
             "Failed to open measurement record: %s",
             path);
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
@@ -320,13 +344,16 @@ static bool readRecordFile(
 
         file.close();
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
     const size_t readBytes =
         file.read(
-            reinterpret_cast<uint8_t*>(&record),
+            reinterpret_cast<uint8_t*>(
+                &record),
             sizeof(record));
 
     file.close();
@@ -336,14 +363,16 @@ static bool readRecordFile(
         LOG_ERROR(
             "Incomplete measurement record read: %s [%u/%u bytes]",
             path,
-            static_cast<unsigned>(readBytes),
-            static_cast<unsigned>(sizeof(record)));
+            static_cast<unsigned>(
+                readBytes),
+            static_cast<unsigned>(
+                sizeof(record)));
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
-
-    clearFault(FaultCode::SD_READ_FAILED);
 
     return true;
 }
@@ -368,14 +397,19 @@ static bool countValidRecords(
 
     if (!isSdCardAvailable())
     {
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
     File directory =
-        SD.open(directoryPath, FILE_READ);
+        SD.open(
+            directoryPath,
+            FILE_READ);
 
-    if (!directory || !directory.isDirectory())
+    if (!directory ||
+        !directory.isDirectory())
     {
         if (directory)
         {
@@ -386,11 +420,14 @@ static bool countValidRecords(
             "Failed to scan buffer directory: %s",
             directoryPath);
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
-    File file = directory.openNextFile();
+    File file =
+        directory.openNextFile();
 
     while (file)
     {
@@ -401,19 +438,20 @@ static bool countValidRecords(
             if (isValidRecordFileName(
                     file.name(),
                     timestamp) &&
-                file.size() == sizeof(MeasurementRecord))
+                file.size() ==
+                    sizeof(MeasurementRecord))
             {
                 count++;
             }
         }
 
         file.close();
-        file = directory.openNextFile();
+
+        file =
+            directory.openNextFile();
     }
 
     directory.close();
-
-    clearFault(FaultCode::SD_READ_FAILED);
 
     return true;
 }
@@ -441,14 +479,19 @@ static bool findOldestRecord(
 
     if (!isSdCardAvailable())
     {
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
     File directory =
-        SD.open(directoryPath, FILE_READ);
+        SD.open(
+            directoryPath,
+            FILE_READ);
 
-    if (!directory || !directory.isDirectory())
+    if (!directory ||
+        !directory.isDirectory())
     {
         if (directory)
         {
@@ -459,17 +502,22 @@ static bool findOldestRecord(
             "Failed to open buffer directory: %s",
             directoryPath);
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
     bool recordFound = false;
-    File file = directory.openNextFile();
+
+    File file =
+        directory.openNextFile();
 
     while (file)
     {
         if (!file.isDirectory() &&
-            file.size() == sizeof(MeasurementRecord))
+            file.size() ==
+                sizeof(MeasurementRecord))
         {
             uint32_t currentTimestamp = 0;
 
@@ -480,10 +528,13 @@ static bool findOldestRecord(
                 if (!recordFound ||
                     currentTimestamp < timestamp)
                 {
-                    timestamp = currentTimestamp;
-                    path = buildRecordPath(
-                        directoryPath,
-                        currentTimestamp);
+                    timestamp =
+                        currentTimestamp;
+
+                    path =
+                        buildRecordPath(
+                            directoryPath,
+                            currentTimestamp);
 
                     recordFound = true;
                 }
@@ -491,15 +542,12 @@ static bool findOldestRecord(
         }
 
         file.close();
-        file = directory.openNextFile();
+
+        file =
+            directory.openNextFile();
     }
 
     directory.close();
-
-    if (recordFound)
-    {
-        clearFault(FaultCode::SD_READ_FAILED);
-    }
 
     return recordFound;
 }
@@ -512,17 +560,30 @@ static bool findOldestRecord(
  * Returns:     true  - File removed
  *              false - Removal failed
  * Notes:       Used after successful transmission
- *              or when discarding the oldest
- *              record during buffer overflow.
+ *              and for storage cleanup.
  *************************************************/
-static bool removeRecordFile(const char* path)
+static bool removeRecordFile(
+    const char* path)
 {
     if (!isSdCardAvailable())
     {
         LOG_ERROR(
             "Cannot remove measurement record: SD card unavailable");
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
+        return false;
+    }
+
+    if (path == nullptr)
+    {
+        LOG_ERROR(
+            "Cannot remove measurement record: path is null");
+
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
@@ -532,25 +593,26 @@ static bool removeRecordFile(const char* path)
             "Failed to remove measurement record: %s",
             path);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
-
-    clearFault(FaultCode::SD_WRITE_FAILED);
 
     return true;
 }
 
 /*************************************************
  * Function:    removeOldestStoredRecord
- * Description: Removes the globally oldest valid
- *              buffered record from absolute or
- *              relative storage.
+ * Description: Removes the oldest buffered record
+ *              from absolute or relative storage.
  * Parameters:  None
  * Returns:     true  - Oldest record removed
  *              false - No removable record found
- * Notes:       Used only to preserve the existing
- *              bounded-buffer overflow behavior.
+ * Notes:       Relative records are removed before
+ *              absolute records because they were
+ *              created before a valid absolute
+ *              time reference was available.
  *************************************************/
 static bool removeOldestStoredRecord()
 {
@@ -572,37 +634,72 @@ static bool removeOldestStoredRecord()
             relativePath,
             relativeTimestamp);
 
-    if (!hasAbsolute && !hasRelative)
+    if (!hasAbsolute &&
+        !hasRelative)
     {
         return false;
     }
 
-    // Relative records originate before a valid
-    // absolute time reference was available and
-    // therefore precede later absolute records of
-    // the same continued Boot Epoch.
-    //
-    // If relative records still exist, discard the
-    // oldest relative record first. Startup logic
-    // must already have removed relative records
-    // from invalid previous Boot Epochs.
     const String& path =
-        hasRelative ? relativePath : absolutePath;
+        hasRelative
+            ? relativePath
+            : absolutePath;
 
-    if (!removeRecordFile(path.c_str()))
+    if (!removeRecordFile(
+            path.c_str()))
     {
         return false;
     }
-
-    overflowCounter++;
 
     LOG_WARN(
-        "Measurement buffer full: oldest record removed [%s, overflow=%lu]",
-        path.c_str(),
-        static_cast<unsigned long>(overflowCounter));
+        "Oldest buffered record removed: %s",
+        path.c_str());
 
     return true;
 }
+
+/*************************************************
+ * Function:    ensureStorageSpace
+ * Description: Ensures sufficient free SD card
+ *              space before storing a new record.
+ * Parameters:  None
+ * Returns:     true  - Sufficient space available
+ *              false - Space could not be freed
+ * Notes:       Oldest records are removed until
+ *              the configured free-space reserve
+ *              is available.
+ *************************************************/
+static bool ensureStorageSpace()
+{
+    if (!isSdCardAvailable())
+    {
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
+        return false;
+    }
+
+    while (getSdFreeBytes() <
+           MIN_FREE_SPACE_BYTES)
+    {
+        LOG_WARN(
+            "SD card storage low: removing oldest buffered record");
+
+        if (!removeOldestStoredRecord())
+        {
+            LOG_ERROR(
+                "Unable to free SD card storage");
+
+            setFault(
+                FaultCode::SD_WRITE_FAILED);
+
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /*************************************************
  * Function:    clearRelativeRecords
  * Description: Removes all relative measurement
@@ -620,17 +717,19 @@ static bool clearRelativeRecords()
 {
     if (!isSdCardAvailable())
     {
-        LOG_ERROR(
-            "Cannot clear relative records: SD card unavailable");
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
 
-        setFault(FaultCode::SD_WRITE_FAILED);
         return false;
     }
 
     File directory =
-        SD.open(BUFFER_RELATIVE_DIR, FILE_READ);
+        SD.open(
+            BUFFER_RELATIVE_DIR,
+            FILE_READ);
 
-    if (!directory || !directory.isDirectory())
+    if (!directory ||
+        !directory.isDirectory())
     {
         if (directory)
         {
@@ -640,13 +739,16 @@ static bool clearRelativeRecords()
         LOG_ERROR(
             "Failed to open relative buffer directory");
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
     bool success = true;
 
-    File file = directory.openNextFile();
+    File file =
+        directory.openNextFile();
 
     while (file)
     {
@@ -659,13 +761,16 @@ static bool clearRelativeRecords()
 
             file.close();
 
-            if (!SD.remove(filePath.c_str()))
+            if (!SD.remove(
+                    filePath.c_str()))
             {
                 LOG_ERROR(
                     "Failed to remove relative record: %s",
                     filePath.c_str());
 
-                setFault(FaultCode::SD_WRITE_FAILED);
+                setFault(
+                    FaultCode::SD_WRITE_FAILED);
+
                 success = false;
             }
             else
@@ -680,24 +785,21 @@ static bool clearRelativeRecords()
             file.close();
         }
 
-        file = directory.openNextFile();
+        file =
+            directory.openNextFile();
     }
 
     directory.close();
 
-    if (!success)
+    if (success)
     {
-        return false;
+        LOG_INFO(
+            "Relative measurement records cleared");
     }
 
-    clearFault(FaultCode::SD_READ_FAILED);
-    clearFault(FaultCode::SD_WRITE_FAILED);
-
-    LOG_INFO(
-        "Relative measurement records cleared");
-
-    return true;
+    return success;
 }
+
 //--------------------------------------------------
 // Public buffer API
 //--------------------------------------------------
@@ -706,34 +808,43 @@ static bool clearRelativeRecords()
  * Function:    initBuffer
  * Description: Initializes the SD card based
  *              measurement buffer.
- * Parameters:  None
+ * Parameters:  hasNewBootEpoch - Indicates whether
+ *              a new Boot Epoch was created
  * Returns:     true  - Initialization successful
  *              false - Initialization failed
- * Notes:       Creates required directories and
+ * Notes:       Creates required directories,
+ *              removes invalid relative records
+ *              after a new Boot Epoch and
  *              reconstructs the buffer state by
  *              scanning the SD card.
  *************************************************/
 bool initBuffer(bool hasNewBootEpoch)
 {
-    LOG_INFO("Initializing measurement buffer...");
-
-    overflowCounter = 0;
+    LOG_INFO(
+        "Initializing measurement buffer...");
 
     if (!isSdCardAvailable())
     {
         LOG_ERROR(
-            "Measurement buffer initialization failed: SD card unavailable");
+            "Measurement buffer initialization failed: "
+            "SD card unavailable");
 
-        setFault(FaultCode::SD_READ_FAILED);
+        setFault(
+            FaultCode::SD_READ_FAILED);
+
         return false;
     }
 
-    if (!createSdDirectory(BUFFER_ROOT_DIR) ||
-        !createSdDirectory(BUFFER_ABSOLUTE_DIR) ||
-        !createSdDirectory(BUFFER_RELATIVE_DIR))
+    if (!createSdDirectory(
+            BUFFER_ROOT_DIR) ||
+        !createSdDirectory(
+            BUFFER_ABSOLUTE_DIR) ||
+        !createSdDirectory(
+            BUFFER_RELATIVE_DIR))
     {
         LOG_ERROR(
-            "Measurement buffer initialization failed: directory setup failed");
+            "Measurement buffer initialization failed: "
+            "directory setup failed");
 
         return false;
     }
@@ -741,7 +852,8 @@ bool initBuffer(bool hasNewBootEpoch)
     if (hasNewBootEpoch)
     {
         LOG_INFO(
-            "New Boot Epoch detected: clearing relative measurement records");
+            "New Boot Epoch detected: "
+            "clearing relative measurement records");
 
         if (!clearRelativeRecords())
         {
@@ -764,17 +876,22 @@ bool initBuffer(bool hasNewBootEpoch)
             relativeCount))
     {
         LOG_ERROR(
-            "Measurement buffer initialization failed: directory scan failed");
+            "Measurement buffer initialization failed: "
+            "directory scan failed");
 
         return false;
     }
 
     LOG_INFO(
-        "Measurement buffer initialized: absolute=%lu, relative=%lu, total=%lu",
-        static_cast<unsigned long>(absoluteCount),
-        static_cast<unsigned long>(relativeCount),
+        "Measurement buffer initialized: "
+        "absolute=%lu, relative=%lu, total=%lu",
         static_cast<unsigned long>(
-            absoluteCount + relativeCount));
+            absoluteCount),
+        static_cast<unsigned long>(
+            relativeCount),
+        static_cast<unsigned long>(
+            absoluteCount +
+            relativeCount));
 
     return true;
 }
@@ -788,31 +905,33 @@ bool initBuffer(bool hasNewBootEpoch)
  *              false - Storage failed
  * Notes:       Absolute and relative records are
  *              stored in separate directories.
+ *              If SD storage becomes low, oldest
+ *              records are removed before writing
+ *              the new record.
  *************************************************/
-bool pushRecord(const MeasurementRecord& record)
+bool pushRecord(
+    const MeasurementRecord& record)
 {
     if (!isSdCardAvailable())
     {
         LOG_ERROR(
-            "Cannot buffer measurement record: SD card unavailable");
+            "Cannot buffer measurement record: "
+            "SD card unavailable");
 
-        setFault(FaultCode::SD_WRITE_FAILED);
+        setFault(
+            FaultCode::SD_WRITE_FAILED);
+
         return false;
     }
 
-    if (isBufferFull())
+    if (!ensureStorageSpace())
     {
-        if (!removeOldestStoredRecord())
-        {
-            LOG_ERROR(
-                "Cannot free space in full measurement buffer");
-
-            return false;
-        }
+        return false;
     }
 
     const bool absolute =
-        isAbsoluteTimestamp(record.timestamp);
+        isAbsoluteTimestamp(
+            record.timestamp);
 
     const char* directory =
         absolute
@@ -825,9 +944,13 @@ bool pushRecord(const MeasurementRecord& record)
             record.timestamp);
 
     LOG_INFO(
-        "Record status: STORING [timestamp=%lu, type=%s]",
-        static_cast<unsigned long>(record.timestamp),
-        absolute ? "ABSOLUTE" : "RELATIVE");
+        "Record status: STORING "
+        "[timestamp=%lu, type=%s]",
+        static_cast<unsigned long>(
+            record.timestamp),
+        absolute
+            ? "ABSOLUTE"
+            : "RELATIVE");
 
     if (!writeRecordFile(
             path.c_str(),
@@ -858,7 +981,8 @@ bool pushRecord(const MeasurementRecord& record)
  * Notes:       ADR-2.02 permits transmission only
  *              from /buffer/absolute.
  *************************************************/
-bool readOldestRecord(MeasurementRecord& record)
+bool readOldestRecord(
+    MeasurementRecord& record)
 {
     String path;
     uint32_t timestamp = 0;
@@ -886,8 +1010,10 @@ bool readOldestRecord(MeasurementRecord& record)
     }
 
     LOG_INFO(
-        "Record status: LOADED [timestamp=%lu, file=%s]",
-        static_cast<unsigned long>(record.timestamp),
+        "Record status: LOADED "
+        "[timestamp=%lu, file=%s]",
+        static_cast<unsigned long>(
+            record.timestamp),
         path.c_str());
 
     return true;
@@ -916,12 +1042,14 @@ bool removeOldestRecord()
             timestamp))
     {
         LOG_DEBUG(
-            "Cannot remove buffered record: no absolute record available");
+            "Cannot remove buffered record: "
+            "no absolute record available");
 
         return false;
     }
 
-    if (!removeRecordFile(path.c_str()))
+    if (!removeRecordFile(
+            path.c_str()))
     {
         return false;
     }
@@ -932,27 +1060,11 @@ bool removeOldestRecord()
 
     if (isBufferEmpty())
     {
-        LOG_INFO("Buffer status: EMPTY");
+        LOG_INFO(
+            "Buffer status: EMPTY");
     }
 
     return true;
-}
-
-/*************************************************
- * Function:    isBufferFull
- * Description: Checks whether the configured
- *              measurement buffer limit has been
- *              reached.
- * Parameters:  None
- * Returns:     true  - Buffer is full
- *              false - Buffer has free capacity
- * Notes:       The count is reconstructed directly
- *              from valid files on the SD card.
- *************************************************/
-bool isBufferFull()
-{
-    return getRecordCount() >=
-           MEASUREMENT_BUFFER_SIZE;
 }
 
 /*************************************************
@@ -996,7 +1108,8 @@ uint16_t getRecordCount()
     }
 
     const uint32_t totalCount =
-        absoluteCount + relativeCount;
+        absoluteCount +
+        relativeCount;
 
     if (totalCount > UINT16_MAX)
     {
@@ -1005,35 +1118,4 @@ uint16_t getRecordCount()
 
     return static_cast<uint16_t>(
         totalCount);
-}
-
-/*************************************************
- * Function:    getOverflowCount
- * Description: Returns the runtime overflow count.
- * Parameters:  None
- * Returns:     Number of records discarded because
- *              the configured buffer limit was
- *              reached.
- * Notes:       The counter is intentionally not
- *              persisted because ADR-2.02 forbids
- *              separate persistent buffer metadata.
- *************************************************/
-uint32_t getOverflowCount()
-{
-    return overflowCounter;
-}
-
-/*************************************************
- * Function:    resetOverflowCount
- * Description: Resets the runtime overflow count.
- * Parameters:  None
- * Returns:     true
- * Notes:       No persistent storage operation is
- *              required.
- *************************************************/
-bool resetOverflowCount()
-{
-    overflowCounter = 0;
-
-    return true;
 }
