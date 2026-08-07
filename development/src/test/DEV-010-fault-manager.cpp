@@ -108,7 +108,7 @@ void loopDevFaultManager()
             break;
     }
 
-    updateErrorIndicator();
+    updateFaultManager();
 
     Serial.print("Fault active : ");
     Serial.println(

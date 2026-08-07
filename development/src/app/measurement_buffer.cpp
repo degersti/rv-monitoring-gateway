@@ -603,7 +603,101 @@ static bool removeOldestStoredRecord()
 
     return true;
 }
+/*************************************************
+ * Function:    clearRelativeRecords
+ * Description: Removes all relative measurement
+ *              records from the SD card.
+ * Parameters:  None
+ * Returns:     true  - All files removed
+ *              false - Cleanup failed
+ * Notes:       Called during buffer initialization
+ *              when a new Boot Epoch has been
+ *              created and existing relative
+ *              timestamps can no longer be
+ *              reconstructed.
+ *************************************************/
+static bool clearRelativeRecords()
+{
+    if (!isSdCardAvailable())
+    {
+        LOG_ERROR(
+            "Cannot clear relative records: SD card unavailable");
 
+        setFault(FaultCode::SD_WRITE_FAILED);
+        return false;
+    }
+
+    File directory =
+        SD.open(BUFFER_RELATIVE_DIR, FILE_READ);
+
+    if (!directory || !directory.isDirectory())
+    {
+        if (directory)
+        {
+            directory.close();
+        }
+
+        LOG_ERROR(
+            "Failed to open relative buffer directory");
+
+        setFault(FaultCode::SD_READ_FAILED);
+        return false;
+    }
+
+    bool success = true;
+
+    File file = directory.openNextFile();
+
+    while (file)
+    {
+        if (!file.isDirectory())
+        {
+            const String filePath =
+                String(BUFFER_RELATIVE_DIR) +
+                "/" +
+                String(file.name());
+
+            file.close();
+
+            if (!SD.remove(filePath.c_str()))
+            {
+                LOG_ERROR(
+                    "Failed to remove relative record: %s",
+                    filePath.c_str());
+
+                setFault(FaultCode::SD_WRITE_FAILED);
+                success = false;
+            }
+            else
+            {
+                LOG_DEBUG(
+                    "Relative record removed: %s",
+                    filePath.c_str());
+            }
+        }
+        else
+        {
+            file.close();
+        }
+
+        file = directory.openNextFile();
+    }
+
+    directory.close();
+
+    if (!success)
+    {
+        return false;
+    }
+
+    clearFault(FaultCode::SD_READ_FAILED);
+    clearFault(FaultCode::SD_WRITE_FAILED);
+
+    LOG_INFO(
+        "Relative measurement records cleared");
+
+    return true;
+}
 //--------------------------------------------------
 // Public buffer API
 //--------------------------------------------------
@@ -619,7 +713,7 @@ static bool removeOldestStoredRecord()
  *              reconstructs the buffer state by
  *              scanning the SD card.
  *************************************************/
-bool initBuffer()
+bool initBuffer(bool hasNewBootEpoch)
 {
     LOG_INFO("Initializing measurement buffer...");
 
@@ -642,6 +736,21 @@ bool initBuffer()
             "Measurement buffer initialization failed: directory setup failed");
 
         return false;
+    }
+
+    if (hasNewBootEpoch)
+    {
+        LOG_INFO(
+            "New Boot Epoch detected: clearing relative measurement records");
+
+        if (!clearRelativeRecords())
+        {
+            LOG_ERROR(
+                "Measurement buffer initialization failed: "
+                "relative record cleanup failed");
+
+            return false;
+        }
     }
 
     uint32_t absoluteCount = 0;

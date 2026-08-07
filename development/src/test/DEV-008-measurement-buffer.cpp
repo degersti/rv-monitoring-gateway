@@ -342,7 +342,7 @@ void setupDevMeasurementBuffer()
     Serial.println(
         "Initializing measurement buffer...");
 
-    if (!initBuffer())
+    if (!initBuffer(hasNewBootEpoch()))
     {
         Serial.println(
             "Measurement buffer initialization FAILED");

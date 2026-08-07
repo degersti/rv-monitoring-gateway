@@ -13,7 +13,7 @@
  * Notes:       Reconstructs the buffer state by
  *              scanning the SD card directories.
  *************************************************/
-bool initBuffer();
+bool initBuffer(bool hasNewBootEpoch);
 
 /*************************************************
  * Function:    pushRecord
