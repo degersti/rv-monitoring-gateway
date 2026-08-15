@@ -39,12 +39,19 @@ constexpr uint8_t PIN_LED_ERROR   = 12;
 // SHT31 temperature / humidity sensor configuration
 constexpr uint8_t SHT31_ADDR = 0x44;
 
+// SD card SPI interface configuration
+constexpr uint8_t PIN_SD_SCK  = 35;
+constexpr uint8_t PIN_SD_MOSI = 36;
+constexpr uint8_t PIN_SD_CS   = 37;
+constexpr uint8_t PIN_SD_MISO = 47;
+
+
 // ==================================================
 // Runtime / cycle configuration
 // ==================================================
 
 constexpr uint32_t SERIAL_MONITOR_WAIT_SEC  = 10;
-constexpr uint32_t CYCLE_INTERVAL_MIN       = 5;
+constexpr uint32_t CYCLE_INTERVAL_MIN       = 1;
 constexpr uint32_t WATCHDOG_TIMEOUT_SEC     = 30;
 
 constexpr uint64_t SEC_TO_MS = 1000ULL;
@@ -124,7 +131,22 @@ constexpr uint8_t  SAMPLE_COUNT    = 32;
 constexpr uint16_t SAMPLE_DELAY_MS = 2;
 
 // ==================================================
-// Measurement buffer configuration
+// Buffer configuration
 // ==================================================
 
-constexpr uint16_t MEASUREMENT_BUFFER_SIZE = 256;
+// Reserve enough free space for filesystem metadata
+// and at least one additional measurement record.
+static constexpr uint64_t MIN_FREE_SPACE_BYTES = 4096ULL;
+
+// Buffer paths
+static constexpr const char* BUFFER_ROOT_DIR =
+    "/buffer";
+
+static constexpr const char* BUFFER_ABSOLUTE_DIR =
+    "/buffer/absolute";
+
+static constexpr const char* BUFFER_RELATIVE_DIR =
+    "/buffer/relative";
+
+static constexpr const char* BUFFER_FILE_EXTENSION =
+    ".bin";

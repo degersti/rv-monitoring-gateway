@@ -19,6 +19,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "state_machine.h"
+#include "app/sd_manager.h"
 #include "app/runtime_manager.h"
 #include "app/debug_logger.h"
 #include "app/sensor_manager.h"
@@ -90,6 +91,7 @@ void runStateMachine()
          *****************************************************/
         case ProgramState::BOOT:
         {
+            if(!initSdCard()) setFault(FaultCode::SD_INIT_FAILED);
             if(isAlarmActive()) setFault(FaultCode::INPUT_ALARM_ACTIVE);
      
             if(isDebugModeEnabled() && !isSerialInitialized())
@@ -114,7 +116,7 @@ void runStateMachine()
         {
             LOG_INFO("Initializing system modules");
             initTimeManager();
-            if(!initBuffer())
+            if(!initBuffer(hasNewBootEpoch()))
             {
                 LOG_ERROR("Measurement buffer initialization failed");
                 setFault(FaultCode::INVALID_SYSTEM_STATE);

@@ -1,19 +1,7 @@
 #pragma once
 
-struct MeasurementRecord
-{
-    uint32_t bootEpochId;
-    uint32_t timestamp;
+#include "app/measurement_record.h"
 
-    float houseBatteryVoltage;
-    float engineBatteryVoltage;
-
-    float temperature;
-    float humidity;
-
-    bool waterAlarm;
-    bool smokeAlarm;
-};
 enum class RecordValidity
 {
     DISCARD,         // Record cannot be updated and should be discarded

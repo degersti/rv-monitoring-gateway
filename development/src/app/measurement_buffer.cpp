@@ -17,7 +17,6 @@
  *******************************************#******/
 #include <Arduino.h>
 #include <SD.h>
-
 #include "config.h"
 #include "app/measurement_buffer.h"
 #include "app/measurement_record.h"

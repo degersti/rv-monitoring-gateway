@@ -21,7 +21,6 @@
 #include "app/debug_logger.h"
 #include "Adafruit_SHT31.h"
 #include "app/sensor_manager.h"
-#include "fault_manager.h"
 
 // Initialize the SHT31 sensor object
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
@@ -53,7 +52,6 @@ bool initSensorManager(void)
 
     if (!sht31.begin(SHT31_ADDR))
     {
-        setFault(FaultCode::SHT31_INIT_FAILED);
         LOG_ERROR(
             "Initializing sensor: FAILED [type=SHT31, address=0x%02X]",
             SHT31_ADDR
