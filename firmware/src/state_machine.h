@@ -9,7 +9,7 @@ enum class ProgramState
     CREATE_RECORD,
     LOAD_BUFFERED_RECORD,
 
-    CONNECT_WIFI,
+    CONNECT_NETWORK,
     CONNECT_MQTT,
     PUBLISH_DATA,
     BUFFER_DATA,

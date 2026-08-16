@@ -26,7 +26,7 @@
 #include "app/data_manager.h"
 #include "app/time_manager.h"
 #include "app/measurement_buffer.h"
-#include "app/wifi_manager.h"
+#include "app/network_manager.h"
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
 #include "app/status_indicator.h"
@@ -122,11 +122,11 @@ void runStateMachine()
                 setFault(FaultCode::INVALID_SYSTEM_STATE);
                 break;
             }
-            initWifi();
-            initMqtt(getWifiClient());
+            initNetwork();
+            initMqtt(getNetworkClient());
             if (initSensorManager())
             {
-                setState(ProgramState::CONNECT_WIFI);
+                setState(ProgramState::CONNECT_NETWORK);
             }
             else
             {
@@ -209,16 +209,16 @@ void runStateMachine()
             break;
         }
          /*****************************************************
-         * STATE: CONNECT_WIFI
-         * Non-blocking WiFi connection handling.
+         * STATE: CONNECT_NETWORK
+         * Non-blocking network connection handling.
          *****************************************************/
-        case ProgramState::CONNECT_WIFI:
+        case ProgramState::CONNECT_NETWORK:
         {
-            WiFiConnectionState wifiState = processWifiConnection();
+            NetworkConnectionState wifiState = processNetworkConnection();
 
             switch (wifiState)
             {
-                case WiFiConnectionState::CONNECTED:
+                case NetworkConnectionState::CONNECTED:
                     setIndicatorMode(Indicator::NETWORK, IndicatorMode::ON);
                     if(isTimeSyncRequired())
                     {
@@ -230,12 +230,12 @@ void runStateMachine()
                     }
                     break;
 
-                case WiFiConnectionState::FAILED:
+                case NetworkConnectionState::FAILED:
                     setIndicatorMode(Indicator::NETWORK, IndicatorMode::OFF);
                     setState(ProgramState::CREATE_RECORD);
                     break;
 
-                case WiFiConnectionState::CONNECTING:
+                case NetworkConnectionState::CONNECTING:
                     setIndicatorMode(Indicator::NETWORK, IndicatorMode::BLINK_SLOW);
                     break;
             }
@@ -278,7 +278,7 @@ void runStateMachine()
         case ProgramState::PUBLISH_DATA:
         {
             // Abort publishing if no Wi-Fi connection is available
-            if (!getWiFiConnectionStatus())
+            if (!getNetworkConnectionState())
             {
                 LOG_INFO("MQTT publish: SKIPPED [WiFi not connected]");
 
@@ -435,10 +435,10 @@ void runStateMachine()
             
             if (millis() - stateStartTime >= (CYCLE_INTERVAL_MIN * MIN_TO_MS))
             {
-                if (!getWiFiConnectionStatus())
+                if (!getNetworkConnectionState())
                 {
                     disconnectMqtt();
-                    setState(ProgramState::CONNECT_WIFI);
+                    setState(ProgramState::CONNECT_NETWORK);
                     break;
                 }
 

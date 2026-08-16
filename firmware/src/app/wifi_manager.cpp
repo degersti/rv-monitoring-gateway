@@ -215,7 +215,7 @@ bool connectWifi(void)
  *              or failed
  * Notes:       None
  *************************************************/
-bool getWiFiConnectionStatus(void)
+bool getWiFiConnectionState(void)
 {
     return (WiFi.status() == WL_CONNECTED);
 }
