@@ -142,11 +142,10 @@ static constexpr uint64_t MIN_FREE_SPACE_BYTES = 4096ULL;
 static constexpr const char* BUFFER_ROOT_DIR =
     "/buffer";
 
-static constexpr const char* BUFFER_ABSOLUTE_DIR =
-    "/buffer/absolute";
+static constexpr const char* BUFFER_TEMP_FILE_PATH =
+    "/buffer/measurements.tmp";
+    
+constexpr const char* BUFFER_FILE_PATH =
+    "/buffer/measurements.bin";
 
-static constexpr const char* BUFFER_RELATIVE_DIR =
-    "/buffer/relative";
 
-static constexpr const char* BUFFER_FILE_EXTENSION =
-    ".bin";
