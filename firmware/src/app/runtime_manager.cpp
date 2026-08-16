@@ -28,6 +28,8 @@ constexpr uint32_t RTC_MAGIC = 0x52564D47;   // "RVMG"
 static Preferences preferences;
 // Unique identification of the ESP32 device.
 static char deviceId[13];
+// Flag indicating a new boot epoch.
+static bool newBootEpoch = false;
 
 /*************************************************
  * Function:    readBootEpochIdFromFlash
@@ -87,7 +89,9 @@ static void loadDeviceId()
 
     LOG_INFO("Device ID: %s", deviceId);
 }
-
+//--------------------------------------------------
+// Public buffer API
+//--------------------------------------------------
 /*************************************************
  * Function:    initWatchdog
  * Description: Initializes the ESP32 hardware
@@ -142,6 +146,7 @@ void initRuntimeManager(void)
 {
     if (rtcMagic != RTC_MAGIC)
     {
+        newBootEpoch = true;
         rtcMagic = RTC_MAGIC;
 
         bootEpochId = readBootEpochIdFromFlash();
@@ -149,7 +154,26 @@ void initRuntimeManager(void)
 
         writeBootEpochIdToFlash(bootEpochId);
     }
+    else
+    {
+        newBootEpoch = false;
+    }
     loadDeviceId();
+}
+/*************************************************
+ * Function:    hasNewBootEpoch
+ * Description: Checks whether a new boot epoch
+ *              was created during the current
+ *              application cycle.
+ * Parameters:  None
+ * Returns:     true  - New boot epoch created
+ *              false - No new boot epoch
+ * Notes:       A new boot epoch is created when
+ *              the RTC context is invalid. 
+ *  *************************************************/
+bool hasNewBootEpoch(void)
+{
+    return newBootEpoch;
 }
 /*************************************************
  * Function:    getBootEpochId

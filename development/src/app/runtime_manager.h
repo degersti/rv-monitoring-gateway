@@ -4,6 +4,7 @@
 void initWatchdog(void);
 void initRuntimeManager(void);
 void feedRuntimeWatchdog(void);
+bool hasNewBootEpoch(void);
 uint32_t getBootEpochId(void);
 const char* getDeviceId(void);
 bool isAlarmActive(void);

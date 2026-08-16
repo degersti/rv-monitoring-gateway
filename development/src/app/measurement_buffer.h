@@ -1,31 +1,24 @@
 #pragma once
 
 #include <Arduino.h>
-#include "app/data_manager.h"
+#include "measurement_record.h"
 
-// Buffer metadata
-struct MeasurementBufferMetadata
-{
-    uint32_t magic;
-    uint16_t writeIndex;
-    uint16_t readIndex;
-    uint16_t recordCount;
-    uint32_t overflowCounter;
-};
-// Initialization
-bool initBuffer();
+// Initializes the persistent single-file SD buffer.
+bool initBuffer(bool hasNewBootEpoch);
 
-// Write operations
+// Appends one measurement record to the buffer.
 bool pushRecord(const MeasurementRecord& record);
 
-// Read operations
+// Reads the oldest absolute record without removing it.
 bool readOldestRecord(MeasurementRecord& record);
+
+// Removes the oldest absolute record after transmission.
 bool removeOldestRecord();
 
-// Status
+// Returns true when no active records are buffered.
 bool isBufferEmpty();
-bool isBufferFull();
-uint16_t getRecordCount();
-uint32_t getOverflowCount();
-bool resetOverflowCount();
 
+// Returns active record counts from persistent metadata.
+uint16_t getRecordCount();
+uint16_t getAbsoluteRecordCount();
+uint16_t getRelativeRecordCount();
