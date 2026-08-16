@@ -1101,6 +1101,23 @@ bool initBuffer(bool hasNewBootEpoch)
         }
     }
 
+    if (bufferHeader.activeCount == 0 &&
+        bufferHeader.slotCount > 0)
+    {
+        LOG_INFO(
+            "Measurement buffer empty: "
+            "recreating buffer file");
+
+        if (!createEmptyBufferFile())
+        {
+            LOG_ERROR(
+                "Measurement buffer initialization failed: "
+                "buffer recreation failed");
+
+            return false;
+        }
+    }
+
     bufferInitialized = true;
 
     LOG_INFO(
