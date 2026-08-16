@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+> Replaced by ADR-2.05
 
 ## Context
 
