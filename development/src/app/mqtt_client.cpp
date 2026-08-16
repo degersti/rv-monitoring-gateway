@@ -18,7 +18,7 @@
 #include "config.h"
 #include "secrets.h"
 #include "app/mqtt_client.h"
-#include "app/wifi_manager.h"
+#include "app/network_manager.h"
 #include "app/debug_logger.h"
 
 
@@ -131,10 +131,10 @@ MqttConnectionState processMqttConnection(const char* deviceId)
 
     if (!mqttInitialized)
     {
-        initMqtt(getWifiClient());
+        initMqtt(getNetworkClient());
     }
 
-    if (!getWiFiConnectionStatus())
+    if (!getNetworkConnectionState())
     {
         if (mqttClient.connected())
         {

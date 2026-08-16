@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "app/wifi_manager.h"
+#include "app/network_manager.h"
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
 #include "app/runtime_manager.h"
@@ -20,17 +20,17 @@ void setupDevWifiAndMqtt()
     Serial.println("--------------------------------");
 
     initRuntimeManager();
-    initWifi();
-    initMqtt(getWifiClient());
+    initNetwork();
+    initMqtt(getNetworkClient());
 
     Serial.println("WiFi and MQTT initialized");
 }
 
 void loopDevWifiAndMqtt()
 {
-    WiFiConnectionState wifiState = processWifiConnection();
+    NetworkConnectionState NetworkState = processNetworkConnection();
 
-    if (wifiState != WiFiConnectionState::CONNECTED)
+    if (NetworkState != NetworkConnectionState::CONNECTED)
     {
         return;
     }
