@@ -6,6 +6,6 @@
 void initWifi(void);
 NetworkConnectionState processWifiConnection(void);
 void disconnectWifi(void);
-bool getWiFiConnectionState(void);
+bool isWifiConnected(void);
 Client& getWifiClient(void);
 bool connectWifi(void);

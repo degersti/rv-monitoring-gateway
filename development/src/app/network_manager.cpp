@@ -142,7 +142,7 @@ bool getNetworkConnectionState(void)
     switch (activeNetwork)
     {
         case NetworkType::WIFI:
-            return getWiFiConnectionState();
+            return isWifiConnected();
 
         case NetworkType::CELLULAR:
             // CELLULAR support will be added later.
