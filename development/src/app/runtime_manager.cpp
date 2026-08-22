@@ -107,7 +107,7 @@ void initWatchdog(void)
 #if ESP_IDF_VERSION_MAJOR >= 5
     esp_task_wdt_config_t watchdogConfig =
     {
-        .timeout_ms = WATCHDOG_TIMEOUT_SECONDS * 1000,
+        .timeout_ms = WATCHDOG_TIMEOUT_SEC * 1000,
         .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
         .trigger_panic = true
     };

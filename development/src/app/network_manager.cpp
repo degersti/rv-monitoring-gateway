@@ -18,11 +18,10 @@
 #include <Arduino.h>
 #include "app/network_manager.h"
 #include "app/wifi_manager.h"
+#include "app/cellular_manager.h"
 #include "app/debug_logger.h"
 
-
 static NetworkType activeNetwork = NetworkType::WIFI;
-
 
 /*************************************************
  * Function:    initNetwork
@@ -36,9 +35,39 @@ void initNetwork(void)
 {
     LOG_INFO("Initializing network manager");
 
-    activeNetwork = NetworkType::WIFI;
+    switch (activeNetwork)
+    {
+        case NetworkType::WIFI:
+            initWifi();
+            break;
 
-    initWifi();
+        case NetworkType::CELLULAR:
+            // initCellular();
+            break;
+    }
+}
+
+/*************************************************
+ * Function:    processNetworkConnection
+ * Description: Processes the connection state of
+ *              the currently selected network.
+ * Parameters:  None
+ * Returns:     Current network connection state
+ * Notes:       Must be called repeatedly while the
+ *              application is trying to connect.
+ *************************************************/
+NetworkConnectionState processNetworkConnection(void)
+{
+    switch (activeNetwork)
+    {
+        case NetworkType::WIFI:
+            return processWifiConnection();
+
+        case NetworkType::CELLULAR:
+            return processCellularConnection();
+    }
+
+    return NetworkConnectionState::FAILED;
 }
 
 /*************************************************
@@ -63,6 +92,41 @@ void disconnectNetwork(void)
     }
 }
 
+/*************************************************
+ * Function:    setActiveNetwork
+ * Description: Switches the active network
+ *              interface.
+ * Parameters:  network - Network interface to use
+ * Returns:     true  - Network changed
+ *              false - Requested network already
+ *                      active
+ * Notes:       Disconnects the currently active
+ *              interface before switching.
+ *************************************************/
+bool setActiveNetwork(NetworkType network)
+{
+    if (network == activeNetwork)
+    {
+        return false;
+    }
+
+    disconnectNetwork();
+
+    activeNetwork = network;
+
+    switch (activeNetwork)
+    {
+        case NetworkType::WIFI:
+            initWifi();
+            break;
+
+        case NetworkType::CELLULAR:
+            // initCellular();
+            break;
+    }
+
+    return true;
+}
 
 /*************************************************
  * Function:    getNetworkConnectionState
@@ -86,50 +150,6 @@ bool getNetworkConnectionState(void)
     }
 
     return false;
-}
-
-/*************************************************
- * Function:    processNetworkConnection
- * Description: Processes the connection state of
- *              the currently selected network.
- * Parameters:  None
- * Returns:     Current network connection state
- * Notes:       Must be called repeatedly while the
- *              application is trying to connect.
- *************************************************/
-NetworkConnectionState processNetworkConnection(void)
-{
-    switch (activeNetwork)
-    {
-        case NetworkType::WIFI:
-        {
-            WiFiConnectionState state = processWifiConnection();
-
-            switch (state)
-            {
-                case WiFiConnectionState::IDLE:
-                    return NetworkConnectionState::IDLE;
-
-                case WiFiConnectionState::CONNECTING:
-                    return NetworkConnectionState::CONNECTING;
-
-                case WiFiConnectionState::CONNECTED:
-                    return NetworkConnectionState::CONNECTED;
-
-                case WiFiConnectionState::FAILED:
-                    return NetworkConnectionState::FAILED;
-            }
-
-            break;
-        }
-
-        case NetworkType::CELLULAR:
-            // Later:
-            // return convertCellularState(processCellularConnection());
-            break;
-    }
-
-    return NetworkConnectionState::FAILED;
 }
 
 /*************************************************
@@ -157,7 +177,6 @@ Client& getNetworkClient(void)
     // default and only supported network.
     return getWifiClient();
 }
-
 
 /*************************************************
  * Function:    getActiveNetwork

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Arduino.h>
 #include <Client.h>
 
@@ -8,6 +10,7 @@ enum class NetworkConnectionState
     CONNECTED,
     FAILED
 };
+
 enum class NetworkType
 {
     WIFI,
@@ -15,8 +18,9 @@ enum class NetworkType
 };
 
 void initNetwork(void);
-void disconnectNetwork(void);
-bool getNetworkConnectionState(void);
 NetworkConnectionState processNetworkConnection(void);
+void disconnectNetwork(void);
+bool setActiveNetwork(NetworkType network);
+bool getNetworkConnectionState(void);
 Client& getNetworkClient(void);
 NetworkType getActiveNetwork(void);

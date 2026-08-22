@@ -38,6 +38,10 @@
     #include "test/DEV-011-sd-manager.h"
 #endif
 
+#ifdef DEV_012_CELLULAR
+    #include "test/Dev-012-cellular.h"
+#endif
+
 void setup()
 {
     #ifdef DEV_001_SENSOR_MANAGER
@@ -66,6 +70,9 @@ void setup()
     #endif
     #ifdef DEV_011_SD_MANAGER
         setupDevSdManager();
+    #endif
+    #ifdef DEV_012_CELLULAR
+        setupDevCellular();
     #endif
 }
 void loop()
@@ -96,6 +103,9 @@ void loop()
     #endif
     #ifdef DEV_011_SD_MANAGER
         loopDevSdManager();
+    #endif
+    #ifdef DEV_012_CELLULAR
+        loopDevCellular();
     #endif
     
 }

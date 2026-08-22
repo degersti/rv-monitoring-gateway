@@ -1,20 +1,11 @@
 #pragma once
 
 #include <Client.h>
-
-enum class WiFiConnectionState
-{
-    IDLE,
-    CONNECTING,
-    CONNECTED,
-    FAILED
-};
+#include "app/network_manager.h"
 
 void initWifi(void);
-WiFiConnectionState processWifiConnection(void);
+NetworkConnectionState processWifiConnection(void);
 void disconnectWifi(void);
 bool getWiFiConnectionState(void);
 Client& getWifiClient(void);
-
-// Compatibility wrapper. Prefer processWifiConnection() in the state machine.
 bool connectWifi(void);
