@@ -20,6 +20,7 @@
 #include <Network.h>
 #include <NetworkClientSecure.h>
 #include <PPP.h>
+#include <atomic>
 
 #include "config.h"
 #include "app/cellular_manager.h"
@@ -28,32 +29,136 @@
 // TCP client used by higher protocol layers
 static NetworkClientSecure cellularClient;
 
-
 // Public cellular connection state
-static NetworkConnectionState cellularState =
-    NetworkConnectionState::IDLE;
+static NetworkConnectionState cellularState =NetworkConnectionState::IDLE;
 
-
-// Internal connection phases
+// Internal cellular connection phases
 enum class CellularConnectionPhase
 {
     IDLE,
     POWER_UP,
     START_MODEM,
+    WAIT_FOR_MODEM_START,
     WAIT_FOR_NETWORK,
     START_DATA_MODE,
     WAIT_FOR_IP
 };
 
-static CellularConnectionPhase connectionPhase =
-    CellularConnectionPhase::IDLE;
+static CellularConnectionPhase connectionPhase = CellularConnectionPhase::IDLE;
 
-
+// Cellular connection timing and retry state
 static uint32_t phaseStartTime = 0;
 static uint32_t lastRetryTime = 0;
 static uint32_t cellularConnectionAttempt = 0;
 
+// Internal modem start state
+enum class ModemStartState
+{
+    IDLE,
+    RUNNING,
+    SUCCESS,
+    FAILED
+};
 
+// Current state of the asynchronous modem initialization
+static std::atomic<ModemStartState> modemStartState{ModemStartState::IDLE};
+// Signals the modem start task to clean up after initialization
+static std::atomic<bool> modemStartCancelRequested{false};
+// Handle of the currently running modem start task
+static TaskHandle_t modemStartTaskHandle = nullptr;
+// Modem start task configuration
+static constexpr uint32_t MODEM_START_TASK_STACK_SIZE = 8192;
+static constexpr UBaseType_t MODEM_START_TASK_PRIORITY = 1;
+
+/*************************************************
+ * Function:    modemStartTask
+ * Description: Initializes the PPP modem outside
+ *              the main application task.
+ * Parameters:  parameter - Unused task parameter
+ * Returns:     None
+ * Notes:       PPP.begin() may block for several
+ *              seconds while communicating with
+ *              the modem. Running it in a separate
+ *              task keeps the main loop responsive.
+ *************************************************/
+static void modemStartTask(void* parameter)
+{
+    const bool success = PPP.begin(
+        PPP_MODEM_SIM7000,
+        1,
+        LTE_BAUDRATE);
+
+    // A disconnect may have been requested while
+    // PPP.begin() was still running.
+    if (modemStartCancelRequested)
+    {
+        if (success)
+        {
+            PPP.end();
+        }
+
+        digitalWrite(LTE_POWER_PIN, LOW);
+
+        modemStartState =
+            ModemStartState::IDLE;
+
+        modemStartCancelRequested = false;
+        modemStartTaskHandle = nullptr;
+
+        vTaskDelete(nullptr);
+        return;
+    }
+
+    modemStartState =
+        success
+            ? ModemStartState::SUCCESS
+            : ModemStartState::FAILED;
+
+    modemStartTaskHandle = nullptr;
+
+    vTaskDelete(nullptr);
+}
+/*************************************************
+ * Function:    startModemTask
+ * Description: Starts asynchronous PPP modem
+ *              initialization.
+ * Parameters:  None
+ * Returns:     true  - Task successfully created
+ *              false - Task creation failed
+ *************************************************/
+static bool startModemTask(void)
+{
+    if (modemStartState ==
+        ModemStartState::RUNNING)
+    {
+        return true;
+    }
+
+    modemStartCancelRequested = false;
+
+    modemStartState =
+        ModemStartState::RUNNING;
+
+    const BaseType_t result = xTaskCreate(
+        modemStartTask,
+        "modem_start",
+        MODEM_START_TASK_STACK_SIZE,
+        nullptr,
+        MODEM_START_TASK_PRIORITY,
+        &modemStartTaskHandle);
+
+    if (result != pdPASS)
+    {
+        modemStartState =
+            ModemStartState::IDLE;
+
+        modemStartTaskHandle = nullptr;
+
+        return false;
+    }
+
+    return true;
+}
 /*************************************************
  * Function:    startCellularConnection
  * Description: Starts a new cellular connection
@@ -157,6 +262,10 @@ void initCellular(void)
     phaseStartTime = 0;
     lastRetryTime = 0;
     cellularConnectionAttempt = 0;
+
+    modemStartState = ModemStartState::IDLE;
+    modemStartCancelRequested = false;
+    modemStartTaskHandle = nullptr;
 }
 
 
@@ -172,6 +281,16 @@ void initCellular(void)
  *************************************************/
 NetworkConnectionState processCellularConnection(void)
 {
+
+    // Wait until a cancelled modem initialization
+    // has completely finished.
+    if (modemStartCancelRequested ||
+        ((modemStartState == ModemStartState::RUNNING) &&
+        (connectionPhase == CellularConnectionPhase::IDLE)))
+    {
+        return cellularState;
+    }
+
     const uint32_t now = millis();
 
     // Connection established
@@ -264,23 +383,16 @@ NetworkConnectionState processCellularConnection(void)
         {
             LOG_DEBUG("Starting cellular modem");
 
-            if (!PPP.begin(
-                    PPP_MODEM_SIM7000,
-                    1,
-                    LTE_BAUDRATE))
+            if (!startModemTask())
             {
                 failCellularConnection(
-                    "PPP begin failed");
+                    "modem start task failed");
 
                 return cellularState;
             }
 
-            LOG_DEBUG("Cellular modem started");
-
-            phaseStartTime = now;
-
             connectionPhase =
-                CellularConnectionPhase::WAIT_FOR_NETWORK;
+                CellularConnectionPhase::WAIT_FOR_MODEM_START;
 
             break;
         }
@@ -344,6 +456,46 @@ NetworkConnectionState processCellularConnection(void)
             break;
         }
 
+        // -------------------------------------------------
+        // Wait for PPP modem initialization
+        // -------------------------------------------------
+
+        case CellularConnectionPhase::WAIT_FOR_MODEM_START:
+        {
+            if (modemStartState ==
+                ModemStartState::RUNNING)
+            {
+                break;
+            }
+
+            if (modemStartState ==
+                ModemStartState::FAILED)
+            {
+                modemStartState =
+                    ModemStartState::IDLE;
+
+                failCellularConnection(
+                    "PPP begin failed");
+
+                return cellularState;
+            }
+
+            if (modemStartState ==
+                ModemStartState::SUCCESS)
+            {
+                modemStartState =
+                    ModemStartState::IDLE;
+
+                LOG_DEBUG("Cellular modem started");
+
+                phaseStartTime = millis();
+
+                connectionPhase =
+                    CellularConnectionPhase::WAIT_FOR_NETWORK;
+            }
+
+            break;
+        }
 
         // -------------------------------------------------
         // Wait for PPP IP address
@@ -389,9 +541,17 @@ NetworkConnectionState processCellularConnection(void)
  *************************************************/
 void disconnectCellular(void)
 {
-    PPP.end();
+    if (modemStartState ==
+        ModemStartState::RUNNING)
+    {
+        modemStartCancelRequested = true;
+    }
+    else
+    {
+        PPP.end();
 
-    digitalWrite(LTE_POWER_PIN, LOW);
+        digitalWrite(LTE_POWER_PIN, LOW);
+    }
 
     cellularState =
         NetworkConnectionState::IDLE;

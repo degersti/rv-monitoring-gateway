@@ -34,7 +34,7 @@
 void setup()
 {
     initRuntimeManager();
-    //initWatchdog();
+    initWatchdog();
     initHardwareManager();
     initStatusIndicator();
     initStateMachine();
@@ -59,5 +59,5 @@ void loop()
     runStateMachine();
     updateFaultManager();
     updateStatusIndicator();
-    //feedRuntimeWatchdog();
+    feedRuntimeWatchdog();
 }
