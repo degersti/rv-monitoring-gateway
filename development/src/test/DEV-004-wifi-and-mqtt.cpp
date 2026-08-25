@@ -77,6 +77,7 @@
 #include "app/mqtt_client.h"
 #include "app/data_manager.h"
 #include "app/runtime_manager.h"
+#include "app/debug_logger.h"
 
 
 static constexpr uint32_t PUBLISH_INTERVAL_MS = 10000;
@@ -164,8 +165,8 @@ static const char* getMqttStateName(
  *************************************************/
 void setupDevWifiAndMqtt()
 {
-    Serial.begin(115200);
-    delay(1000);
+    initSerialDebugNow();
+    delay(100);
 
     Serial.println();
     Serial.println("--------------------------------");

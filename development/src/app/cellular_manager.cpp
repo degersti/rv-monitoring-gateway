@@ -18,6 +18,7 @@
 
 #include <Arduino.h>
 #include <Network.h>
+#include <NetworkClientSecure.h>
 #include <PPP.h>
 
 #include "config.h"
@@ -25,7 +26,7 @@
 #include "app/debug_logger.h"
 
 // TCP client used by higher protocol layers
-static NetworkClient cellularClient;
+static NetworkClientSecure cellularClient;
 
 
 // Public cellular connection state
@@ -140,6 +141,7 @@ void initCellular(void)
     pinMode(LTE_POWER_PIN, OUTPUT);
     digitalWrite(LTE_POWER_PIN, LOW);
 
+    cellularClient.setInsecure();
     PPP.setApn(LTE_APN);
 
     PPP.setPins(
@@ -175,17 +177,14 @@ NetworkConnectionState processCellularConnection(void)
     // Connection established
     if (PPP.hasIP())
     {
-        if (cellularState !=
-            NetworkConnectionState::CONNECTED)
+        if (cellularState != NetworkConnectionState::CONNECTED)
         {
             LOG_INFO(
                 "Cellular status: CONNECTED [IP=%s]",
                 PPP.localIP().toString().c_str());
 
             LOG_DEBUG(
-                "Cellular network details: operator=%s, RSSI=%d, gateway=%s, DNS=%s",
-                PPP.operatorName().c_str(),
-                PPP.RSSI(),
+                "Cellular network details: gateway=%s, DNS=%s",
                 PPP.gatewayIP().toString().c_str(),
                 PPP.dnsIP().toString().c_str());
         }
