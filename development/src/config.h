@@ -59,13 +59,19 @@ constexpr uint64_t MIN_TO_MS = 60000ULL;
 constexpr uint64_t MIN_TO_US = 60000000ULL;
 
 // ==================================================
+// Network configuration
+// ==================================================
+
+constexpr uint8_t PRIORITY_NETWORK = 0; // 0 = WiFi, 1 = Cellular
+constexpr bool NETWORK_FALLBACK_ENABLED = true;
+
+// ==================================================
 // WiFi configuration
 // ==================================================
 
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS        = 10000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS         = 5000;
 constexpr uint32_t WIFI_STATUS_PRINT_INTERVAL_MS  = 500;
-
 
 // ==================================================
 // Cellular configuration

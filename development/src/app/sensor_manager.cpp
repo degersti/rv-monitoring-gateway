@@ -39,8 +39,7 @@ bool initSensorManager(void)
 {
     LOG_INFO("Initializing ADC");
     analogReadResolution(ADC_RESOLUTION);
-    analogSetPinAttenuation(PIN_HOUSE_ADC, ADC_11db);
-    analogSetPinAttenuation(PIN_ENGINE_ADC, ADC_11db);
+    analogSetAttenuation(ADC_11db);
 
     LOG_INFO(
         "Initializing I2C interface: SDA=%u, SCL=%u",

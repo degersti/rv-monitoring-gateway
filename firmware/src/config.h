@@ -28,7 +28,7 @@ constexpr uint8_t PIN_I2C_SDA = 40;
 constexpr uint8_t PIN_I2C_SCL = 41;
 
 // ESP32-S3 DevKitC onboard RGB LED
-constexpr uint8_t PIN_RGB_LED = 48;
+constexpr uint8_t GPIO_RGB_LED = 48;
 
 // External status LEDs
 constexpr uint8_t PIN_LED_STATUS  = 9;
@@ -59,6 +59,13 @@ constexpr uint64_t MIN_TO_MS = 60000ULL;
 constexpr uint64_t MIN_TO_US = 60000000ULL;
 
 // ==================================================
+// Network configuration
+// ==================================================
+
+constexpr uint8_t PRIORITY_NETWORK = 1; // 0 = WiFi, 1 = Cellular
+constexpr bool NETWORK_FALLBACK_ENABLED = false;
+
+// ==================================================
 // WiFi configuration
 // ==================================================
 
@@ -66,6 +73,21 @@ constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS        = 10000;
 constexpr uint32_t WIFI_RETRY_INTERVAL_MS         = 5000;
 constexpr uint32_t WIFI_STATUS_PRINT_INTERVAL_MS  = 500;
 
+// ==================================================
+// Cellular configuration
+// ==================================================
+
+constexpr uint8_t LTE_POWER_PIN = 8;
+constexpr uint8_t LTE_TX_PIN = 17;
+constexpr uint8_t LTE_RX_PIN = 18;
+constexpr uint32_t LTE_BAUDRATE = 115200;
+
+constexpr const char* LTE_APN = "freeeway";
+
+constexpr uint32_t LTE_POWER_UP_DELAY_MS = 5000;
+constexpr uint32_t LTE_ATTACH_TIMEOUT_MS = 60000;
+constexpr uint32_t LTE_IP_TIMEOUT_MS = 30000;
+constexpr uint32_t LTE_RETRY_INTERVAL_MS = 10000;
 
 // ==================================================
 // MQTT configuration

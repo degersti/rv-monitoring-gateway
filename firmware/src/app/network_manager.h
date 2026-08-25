@@ -1,4 +1,5 @@
-#include <Arduino.h>
+#pragma once
+
 #include <Client.h>
 
 enum class NetworkConnectionState
@@ -8,15 +9,27 @@ enum class NetworkConnectionState
     CONNECTED,
     FAILED
 };
+
+enum class NetworkConnectionPhase
+{
+    PRIORITY,
+    FALLBACK,
+    FAILED
+};
+
 enum class NetworkType
 {
     WIFI,
     CELLULAR
 };
 
-void initNetwork(void);
-void disconnectNetwork(void);
-bool getNetworkConnectionState(void);
+void initNetwork(NetworkType priorityNetwork, bool fallbackEnabled);
 NetworkConnectionState processNetworkConnection(void);
+void disconnectNetwork(void);
+bool setActiveNetwork(NetworkType network);
+bool getNetworkConnectionState(void);
 Client& getNetworkClient(void);
 NetworkType getActiveNetwork(void);
+NetworkType getPriorityNetwork(void);
+bool isFallbackEnabled(void);
+bool isFallbackActive(void);

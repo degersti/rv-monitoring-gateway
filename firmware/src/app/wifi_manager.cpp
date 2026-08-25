@@ -22,6 +22,7 @@
 #include <WiFiClientSecure.h>
 #include "app/debug_logger.h"
 #include "app/debug_strings.h"
+#include "app/network_manager.h"
 
 // WiFi network credentials
 const char* wifi_ssid = WIFI_SSID;
@@ -30,7 +31,7 @@ const char* wifi_password = WIFI_PASSWORD;
 // Secure TCP/TLS client used by MQTT
 static WiFiClientSecure espClient;
 
-static WiFiConnectionState wifiState = WiFiConnectionState::IDLE;
+static NetworkConnectionState wifiState = NetworkConnectionState::IDLE;
 static uint32_t connectStartTime = 0;
 static uint32_t lastRetryTime = 0;
 static uint32_t wifiConnectionAttempt = 0;
@@ -59,7 +60,7 @@ static void startWifiConnection(void)
     WiFi.begin(wifi_ssid, wifi_password);
 
     connectStartTime = millis();
-    wifiState = WiFiConnectionState::CONNECTING;
+    wifiState = NetworkConnectionState::CONNECTING;
 }
 
 /*************************************************
@@ -78,7 +79,7 @@ void initWifi(void)
     WiFi.mode(WIFI_STA);
     espClient.setInsecure();
 
-    wifiState = WiFiConnectionState::IDLE;
+    wifiState = NetworkConnectionState::IDLE;
     connectStartTime = 0;
     lastRetryTime = 0;
     wifiConnectionAttempt = 0;
@@ -93,14 +94,14 @@ void initWifi(void)
  * Notes:       Must be called repeatedly while the
  *              application is trying to connect.
  *************************************************/
-WiFiConnectionState processWifiConnection(void)
+NetworkConnectionState processWifiConnection(void)
 {
     const uint32_t now = millis();
 
     // Connection established
     if (WiFi.status() == WL_CONNECTED)
     {
-        if (wifiState != WiFiConnectionState::CONNECTED)
+        if (wifiState != NetworkConnectionState::CONNECTED)
         {
             const uint32_t elapsedTime = now - connectStartTime;
 
@@ -116,25 +117,25 @@ WiFiConnectionState processWifiConnection(void)
                 WiFi.RSSI());
         }
 
-        wifiState = WiFiConnectionState::CONNECTED;
+        wifiState = NetworkConnectionState::CONNECTED;
         return wifiState;
     }
 
     // Connection lost after previously being connected
-    if (wifiState == WiFiConnectionState::CONNECTED)
+    if (wifiState == NetworkConnectionState::CONNECTED)
     {
-        wifiState = WiFiConnectionState::IDLE;
+        wifiState = NetworkConnectionState::IDLE;
     }
 
     // Start a new connection attempt
-    if (wifiState == WiFiConnectionState::IDLE)
+    if (wifiState == NetworkConnectionState::IDLE)
     {
         startWifiConnection();
         return wifiState;
     }
 
     // Retry after the configured retry interval
-    if (wifiState == WiFiConnectionState::FAILED)
+    if (wifiState == NetworkConnectionState::FAILED)
     {
         if (now - lastRetryTime >= WIFI_RETRY_INTERVAL_MS)
         {
@@ -145,7 +146,7 @@ WiFiConnectionState processWifiConnection(void)
     }
 
     // Abort the current attempt if the timeout expires
-    if (wifiState == WiFiConnectionState::CONNECTING)
+    if (wifiState == NetworkConnectionState::CONNECTING)
     {
         if (now - connectStartTime >= WIFI_CONNECT_TIMEOUT_MS)
         {
@@ -160,7 +161,7 @@ WiFiConnectionState processWifiConnection(void)
 
             WiFi.disconnect(true);
             lastRetryTime = now;
-            wifiState = WiFiConnectionState::FAILED;
+            wifiState = NetworkConnectionState::FAILED;
         }
     }
 
@@ -180,7 +181,7 @@ void disconnectWifi(void)
 {
     WiFi.disconnect(true);
 
-    wifiState = WiFiConnectionState::IDLE;
+    wifiState = NetworkConnectionState::IDLE;
     connectStartTime = 0;
     lastRetryTime = 0;
     wifiConnectionAttempt = 0;
@@ -202,11 +203,11 @@ void disconnectWifi(void)
  *************************************************/
 bool connectWifi(void)
 {
-    return processWifiConnection() == WiFiConnectionState::CONNECTED;
+    return processWifiConnection() == NetworkConnectionState::CONNECTED;
 }
 
 /*************************************************
- * Function:    getWiFiConnectionStatus
+ * Function:    isWiFiConnected
  * Description: Returns the current WiFi connection
  *              state.
  * Parameters:  None
@@ -215,7 +216,7 @@ bool connectWifi(void)
  *              or failed
  * Notes:       None
  *************************************************/
-bool getWiFiConnectionState(void)
+bool isWifiConnected(void)
 {
     return (WiFi.status() == WL_CONNECTED);
 }

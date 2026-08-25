@@ -122,8 +122,13 @@ void runStateMachine()
                 setFault(FaultCode::INVALID_SYSTEM_STATE);
                 break;
             }
-            initNetwork();
+
+            NetworkType priorityNetwork = (PRIORITY_NETWORK == 0)
+                    ? NetworkType::WIFI
+                    : NetworkType::CELLULAR;
+            initNetwork(priorityNetwork, NETWORK_FALLBACK_ENABLED);
             initMqtt(getNetworkClient());
+            
             if (initSensorManager())
             {
                 setState(ProgramState::CONNECT_NETWORK);
