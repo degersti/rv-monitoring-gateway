@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted - Extended by ADR-2.06 and ADR-2.07
+
+The communication strategy defined in this ADR remains valid. The cellular(LTE) connectivity and unified network management concepts have since been further specified in ADR-2.06 and ADR-2.07.
 
 ## Context
 
