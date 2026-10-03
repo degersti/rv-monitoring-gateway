@@ -34,7 +34,7 @@ The project is currently in an early development phase and follows an incrementa
 ### Prototype 2 – Enhanced Connectivity
 
 - [x] Migrate data buffering to SD Card
-- [ ] Cellular communication (LTE / NB-IoT)
+- [x] Cellular communication (LTE / NB-IoT)
 - [ ] MQTT using TLS, QoS 1/2 and Websockets
 - [ ] Bluetooth configuration
 - [ ] Writing Log and Measurements to SD Card
