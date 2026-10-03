@@ -51,7 +51,7 @@ constexpr uint8_t PIN_SD_MISO = 47;
 // ==================================================
 
 constexpr uint32_t SERIAL_MONITOR_WAIT_SEC  = 10;
-constexpr uint32_t CYCLE_INTERVAL_MIN       = 1;
+constexpr uint32_t CYCLE_INTERVAL_MIN       = 5;
 constexpr uint32_t WATCHDOG_TIMEOUT_SEC     = 30;
 
 constexpr uint64_t SEC_TO_MS = 1000ULL;
