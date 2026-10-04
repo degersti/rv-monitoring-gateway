@@ -92,17 +92,6 @@ static bool tryMqttConnect(const char* deviceId)
     {
         LOG_INFO("MQTT status: CONNECTED [clientId=%s]", clientId);
 
-        char topic[64];
-
-        snprintf(topic,
-                 sizeof(topic),
-                 "gateway/%s/status",
-                 deviceId);
-
-        mqttClient.publish(topic, "{\"status\":\"online\"}");
-
-        LOG_DEBUG("MQTT publishing details: topic=%s, qos=0, retained=false", topic);
-
         mqttState = MqttConnectionState::CONNECTED;
         return true;
     }
