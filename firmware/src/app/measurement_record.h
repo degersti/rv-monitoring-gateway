@@ -12,6 +12,7 @@ struct MeasurementRecord
 {
     uint32_t bootEpochId;
     uint32_t timestamp;
+    uint32_t telemetryInterval;
 
     float houseBatteryVoltage;
     float engineBatteryVoltage;

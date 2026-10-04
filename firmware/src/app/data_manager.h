@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/measurement_record.h"
+#include "app/network_manager.h"
 
 enum class RecordValidity
 {
@@ -9,7 +10,7 @@ enum class RecordValidity
     VALID            // Timestamp is already valid or was updated successfully
 };
 
-char* getTelemetry(void);
+char* getTelemetry(NetworkType networkType, int rssi);
 RecordValidity checkValidity(void);
 bool  updateData(void);
 MeasurementRecord& getCurrentData(void);

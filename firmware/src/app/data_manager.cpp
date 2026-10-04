@@ -29,6 +29,7 @@ static char payload[TELEMETRY_PAYLOAD_SIZE];
 static MeasurementRecord data = {
     .bootEpochId = 0,
     .timestamp = 0,
+    .telemetryInterval = 0,
     .houseBatteryVoltage = -999.0f,
     .engineBatteryVoltage = -999.0f,
     .temperature = -999.0f,
@@ -49,21 +50,35 @@ static MeasurementRecord data = {
  *              into a telemetry payload suitable
  *              for MQTT transmission.
  *************************************************/
-char* getTelemetry(void)
+char* getTelemetry(NetworkType networkType, int rssi)
 {
     // Format the data into a JSON string
     snprintf(
             payload,
             TELEMETRY_PAYLOAD_SIZE,
-            "{\"bootEpochId\":%lu,\"timestamp\":%lu,\"houseBatteryVoltage\":%.1f,\"engineBatteryVoltage\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"waterAlarm\":%s,\"smokeAlarm\":%s}",
+            "{\"bootEpochId\":%lu,"
+                "\"timestamp\":%lu,"
+                "\"telemetryInterval\":%lu,"
+                "\"houseBatteryVoltage\":%.1f,"
+                "\"engineBatteryVoltage\":%.1f,"
+                "\"temperature\":%.1f,"
+                "\"humidity\":%.1f,"
+                "\"waterAlarm\":%s,"
+                "\"smokeAlarm\":%s,"
+                "\"networkType\":\"%s\","
+                "\"rssi\":%d}",
             (unsigned long)data.bootEpochId,
             (unsigned long)data.timestamp,
+            (unsigned long)data.telemetryInterval,
             data.houseBatteryVoltage,
             data.engineBatteryVoltage,
             data.temperature,
             data.humidity,
             data.waterAlarm ? "true" : "false",
-            data.smokeAlarm ? "true" : "false"
+            data.smokeAlarm ? "true" : "false",
+            networkType == NetworkType::WIFI ? "WIFI" : 
+                (networkType == NetworkType::CELLULAR ? "CELLULAR" : "UNKNOWN"),
+            rssi
         );
     return payload;
 }
@@ -167,6 +182,7 @@ bool updateData(void)
 
     data.bootEpochId = getBootEpochId();
     data.timestamp = getCurrentTimestamp();
+    data.telemetryInterval = CYCLE_INTERVAL_MIN * MIN_TO_SEC; 
 
     readBatteryVoltages(data);
     success &= readEnvironmentalValues(data);
@@ -178,6 +194,7 @@ bool updateData(void)
         "Record details: "
         "bootEpochId=%lu, "
         "timestamp=%lu (%s), "
+        "telemetryInterval=%lu, "
         "houseBattery=%.2f V, "
         "engineBattery=%.2f V, "
         "temperature=%.1f °C, "

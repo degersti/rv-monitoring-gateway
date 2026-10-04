@@ -55,7 +55,7 @@ void initSerialDebugDelayed(uint32_t startTime)
         serialStarted = true;
     }
 
-    if (millis() - startTime > (SERIAL_MONITOR_WAIT_SEC * SEC_TO_MS))
+    if (millis() - startTime > (SERIAL_MONITOR_WAIT_SEC * SEC_TO_MSEC))
     {    
         Serial.println("==================");
         Serial.println("Debug Mode Active");

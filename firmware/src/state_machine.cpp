@@ -38,6 +38,9 @@ PublishSource publishSource;
 // Timestamp of current state entry
 uint32_t stateStartTime;
 
+NetworkType networkType = NetworkType::WIFI;
+int rssi = -67;
+
 /*************************************************
  * Function:    initStateMachine
  * Description: Initializes the program state
@@ -332,7 +335,7 @@ void runStateMachine()
             }
 
             // Attempt to publish the prepared telemetry payload
-            if (!mqttPublish(getDeviceId(), getTelemetry()))
+            if (!mqttPublish(getDeviceId(), getTelemetry(networkType, rssi)))
             {
                 LOG_INFO("MQTT publish: FAILED");
 
@@ -438,7 +441,7 @@ void runStateMachine()
         {
             mqttLoop();
             
-            if (millis() - stateStartTime >= (CYCLE_INTERVAL_MIN * MIN_TO_MS))
+            if (millis() - stateStartTime >= (CYCLE_INTERVAL_MIN * MIN_TO_MSEC))
             {
                 if (!getNetworkConnectionState())
                 {

@@ -256,7 +256,7 @@ void prepareDeepSleep(void)
         ESP_EXT1_WAKEUP_ANY_LOW);
 
     esp_sleep_enable_timer_wakeup(
-        (uint64_t)CYCLE_INTERVAL_MIN * MIN_TO_US);
+        (uint64_t)CYCLE_INTERVAL_MIN * MIN_TO_USEC);
 }
 
 /*************************************************

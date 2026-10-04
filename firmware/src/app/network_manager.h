@@ -20,7 +20,8 @@ enum class NetworkConnectionPhase
 enum class NetworkType
 {
     WIFI,
-    CELLULAR
+    CELLULAR,
+    UNKNOWN
 };
 
 void initNetwork(NetworkType priorityNetwork, bool fallbackEnabled);
