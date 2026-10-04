@@ -292,6 +292,29 @@ bool setActiveNetwork(NetworkType network)
 }
 
 
+/*****************************************************************
+ * Function:    getNetworkRssi
+ * Description: Returns the signal strength of the currently
+ *              active network interface.
+ * Parameters:  None
+ * Returns:     Signal strength of the active network
+ * Notes:       The returned value depends on the currently
+ *              active network interface.
+ *****************************************************************/
+int getNetworkRssi(void)
+{
+    switch (activeNetwork)
+    {
+        case NetworkType::WIFI:
+            return getWifiRssi();
+
+        case NetworkType::CELLULAR:
+            return getCellularRssi();
+    }
+
+    return 99;
+}
+
 /*************************************************
  * Function:    getNetworkConnectionState
  * Description: Returns whether the currently active

@@ -322,12 +322,20 @@ void runStateMachine()
             // Log the origin of the record being published
             if (publishSource == PublishSource::CURRENT_MEASUREMENT)
             {
+                // For current measurements, the network type and RSSI are known
+                networkType = getActiveNetwork();
+                rssi = getNetworkRssi();
+
                 LOG_INFO(
                     "MQTT publish: START [source=CURRENT, timestamp=%lu]",
                     getCurrentData().timestamp);
             }
             else
             {
+                // For buffered records, the network type and RSSI are unknown
+                networkType = NetworkType::UNKNOWN;
+                rssi = 99;
+
                 LOG_INFO(
                     "MQTT publish: START [source=BUFFER, timestamp=%lu, buffered=%u]",
                     getCurrentData().timestamp,

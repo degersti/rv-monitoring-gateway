@@ -8,4 +8,5 @@ NetworkConnectionState processWifiConnection(void);
 void disconnectWifi(void);
 bool isWifiConnected(void);
 Client& getWifiClient(void);
+int getWifiRssi(void);
 bool connectWifi(void);

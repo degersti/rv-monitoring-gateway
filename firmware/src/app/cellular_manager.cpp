@@ -50,6 +50,7 @@ static CellularConnectionPhase connectionPhase = CellularConnectionPhase::IDLE;
 static uint32_t phaseStartTime = 0;
 static uint32_t lastRetryTime = 0;
 static uint32_t cellularConnectionAttempt = 0;
+static int cellularRssi = 99; // Unknown RSSI value when not connected
 
 // Internal modem start state
 enum class ModemStartState
@@ -404,12 +405,16 @@ NetworkConnectionState processCellularConnection(void)
 
         case CellularConnectionPhase::WAIT_FOR_NETWORK:
         {
+
+             // RSSI must be read before entering PPP data mode.
+            // TODO: Find a way to retrieve current RSSI during an active PPP session.
+            cellularRssi = PPP.RSSI();
             if (PPP.attached())
             {
                 LOG_INFO(
                     "Cellular network attached [operator=%s, RSSI=%d]",
                     PPP.operatorName().c_str(),
-                    PPP.RSSI());
+                    cellularRssi);
 
                 connectionPhase =
                     CellularConnectionPhase::START_DATA_MODE;
@@ -595,4 +600,17 @@ bool isCellularConnected(void)
 Client& getCellularClient(void)
 {
     return cellularClient;
+}
+
+/*****************************************************************
+ * Function:    getCellularRssi
+ * Description: Returns the signal strength of the cellular
+ *              network.
+ * Parameters:  None
+ * Returns:     Cellular network signal strength
+ * Notes:       Signal strength is provided by the PPP modem.
+ *****************************************************************/
+int getCellularRssi(void)
+{
+    return cellularRssi;
 }

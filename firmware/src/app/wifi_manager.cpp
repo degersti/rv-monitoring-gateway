@@ -222,6 +222,19 @@ bool isWifiConnected(void)
 }
 
 /*************************************************
+ * Function:    getWifiRssi
+ * Description: Returns the signal strength of the
+ *              WiFi network.
+ * Parameters:  None
+ * Returns:     WiFi signal strength in dBm
+ * Notes:       None
+ *************************************************/
+int getWifiRssi(void)
+{
+    return WiFi.RSSI();
+}
+
+/*************************************************
  * Function:    getWifiClient
  * Description: Provides access to the secure WiFi
  *              client used for MQTT communication.

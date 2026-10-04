@@ -10,3 +10,4 @@ NetworkConnectionState processCellularConnection(void);
 void disconnectCellular(void);
 bool isCellularConnected(void);
 Client& getCellularClient(void);
+int getCellularRssi(void);

@@ -31,6 +31,7 @@ bool setActiveNetwork(NetworkType network);
 bool getNetworkConnectionState(void);
 Client& getNetworkClient(void);
 NetworkType getActiveNetwork(void);
+int getNetworkRssi(void);
 NetworkType getPriorityNetwork(void);
 bool isFallbackEnabled(void);
 bool isFallbackActive(void);
