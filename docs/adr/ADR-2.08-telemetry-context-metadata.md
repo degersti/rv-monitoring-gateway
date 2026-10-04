@@ -1,4 +1,4 @@
-# ADR-2.08 -- Telemetry Context Metadata
+# ADR-2.08 - Telemetry Context Metadata
 
 ## Status
 
